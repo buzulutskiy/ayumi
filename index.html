@@ -29,7 +29,7 @@ body{
   background:var(--bg);color:var(--tx);
   font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Inter,system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;
-  padding-bottom:calc(76px + env(safe-area-inset-bottom));
+  padding-bottom:calc(72px + max(8px, env(safe-area-inset-bottom) * .45));
   overscroll-behavior-y:none;
 }
 .wrap{max-width:560px;margin:0 auto;padding:0 16px}
@@ -140,7 +140,9 @@ svg{display:block;width:100%;height:auto;overflow:visible}
 /* tabbar */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;
   background:rgba(11,13,16,.82);backdrop-filter:saturate(160%) blur(18px);-webkit-backdrop-filter:saturate(160%) blur(18px);
-  border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
+  border-top:1px solid var(--line);
+  /* инсет ужат: полная величина уводит панель заметно выше края экрана */
+  padding:6px 0 max(8px, calc(env(safe-area-inset-bottom) * .45))}
 .tabbar .in{max-width:560px;margin:0 auto;display:flex}
 .tb{flex:1;text-align:center;color:var(--mut);font-size:10.5px;font-weight:600;padding:2px 0}
 .tb .i{display:block;font-size:19px;line-height:1.25;filter:grayscale(1);opacity:.55}
@@ -443,11 +445,15 @@ function indexWindow(from,to){
   const R=S.runs.filter(r=>{const d=fromISO(r.date);return d>addDays(today(),-to)&&d<=addDays(today(),-from)});
   const cont=R.filter(r=>r.kind!=='int'&&r.min>=5&&r.dist>=1);
   const easy=R.filter(r=>r.min>0&&r.dist>=1&&(!r.rpe||r.rpe<=2));
+  // если часы отдают пульс — считаем экономичность: сколько метров в минуту на удар
+  const withHr=R.filter(r=>r.hr>40&&r.min>0&&r.dist>=1);
   return {
     n:R.length,
     vdot:cont.length?Math.max(...cont.map(r=>vdotOf(r.dist,r.min))):0,
     endur:cont.length?Math.max(...cont.map(r=>r.min)):0,
     pace:easy.length?median(easy.map(r=>r.min/r.dist)):0,
+    hr:withHr.length?median(withHr.map(r=>r.hr)):0,
+    ei:withHr.length?median(withHr.map(r=>r.dist*1000/r.min/r.hr)):0,
   };
 }
 /* Направление: лучше, так же или хуже. Порог нужен, чтобы шум не выдавался за рост. */
@@ -464,6 +470,7 @@ function runnerIndex(){
     vdotDir:dir(cur.vdot,prev.vdot,true,.02),
     endurDir:dir(cur.endur,prev.endur,true,.05),
     paceDir:dir(cur.pace,prev.pace,false,.02),
+    eiDir:dir(cur.ei,prev.ei,true,.02),
     score:cur.vdot?Math.round(cur.vdot):0};
 }
 /* Словами: что вообще значит это число */
@@ -604,7 +611,7 @@ function vSessions(P,st){
       return `<div class="rn">
         <div class="dt"><b>${d.getDate()}</b><small>${MON[d.getMonth()]}</small></div>
         <div class="m"><b>${km(r.min||0)} мин</b> <span style="color:var(--mut);font-size:13px">${km(r.dist)} км${r.min?' · '+pace(r.min,r.dist)+' /км':''}</span>
-          <small>${r.kind?(r.kind==='int'?'интервалы':'непрерывный бег'):'загружено из файла'}${a?' · '+a.t.toLowerCase():''}</small></div>
+          <small>${r.kind?(r.kind==='int'?'интервалы':'непрерывный бег'):'загружено из файла'}${a?' · '+a.t.toLowerCase():''}${r.hr?' · пульс '+r.hr:''}${r.up?' · +'+r.up+' м':''}</small></div>
         <button class="x" onclick="askRpe('${r.id}')">${r.rpe?'⋯':'?'}</button>
       </div>`}).join('')
       :'<div class="empty">Ещё ничего нет. Загрузи файл после первой пробежки.</div>'}
@@ -645,7 +652,9 @@ function indexCard(){
     <div style="margin-top:14px">
       <div class="wl"><span>Выносливость · ${km(Math.round(I.cur.endur))} мин подряд</span><b style="font-weight:500;font-size:13px">${word(I.endurDir)}</b></div>
       <div class="wl"><span>Лёгкий темп · ${I.cur.pace?pace(I.cur.pace,1)+' /км':'—'}</span><b style="font-weight:500;font-size:13px">${word(I.paceDir)}</b></div>
+      ${I.cur.ei?`<div class="wl"><span>Экономичность · ${km(Math.round(I.cur.ei*100)/100)} м на удар, пульс ${Math.round(I.cur.hr)}</span><b style="font-weight:500;font-size:13px">${word(I.eiDir)}</b></div>`:''}
     </div>
+    ${I.cur.ei?'':`<div class="hint" style="margin-top:12px;opacity:.8">Пульса в твоих файлах нет. Если часы научатся его отдавать, здесь появится экономичность — сколько метров ты пробегаешь на один удар сердца. Это самый честный показатель формы: при одинаковом темпе пульс падает раньше, чем растёт скорость.</div>`}
     <div class="hint" style="margin-top:12px">Это оценка МПК по формулам Дэниелса и Гилберта: сколько кислорода тело способно переработать на килограмм веса в минуту. Считается по самому быстрому непрерывному бегу за 6 недель и сравнивается с предыдущими шестью. Число занижено, если ты не бежал ни разу в полную силу, — важна не величина, а куда она идёт.</div>
   </div>`;
 }
@@ -984,7 +993,8 @@ function parseJSON(text){
     const kT=key(v,/^(duration|moving_?time|elapsed_?time|total_?time|time_?spent|sport_?time)$/i)||key(v,/duration|elapsed|moving/i);
     if(kD&&kL&&typeof v[kL]!=='object'){
       const type=String(v.type||v.sport||v.category||v.activity||v.name||'Run');
-      if(!isNotRun(type))found.push({d:v[kD],dist:v[kL],dur:kT?v[kT]:0});
+      const kH=key(v,/^(avg_?hr|average_?heart_?rate|heart_?rate|hrm?_?avg)$/i)||key(v,/heart|pulse|пульс/i);
+      if(!isNotRun(type))found.push({d:v[kD],dist:v[kL],dur:kT?v[kT]:0,hr:kH?parseFloat(v[kH])||0:0});
     }
     Object.values(v).forEach(x=>walk(x,depth+1));
   };
@@ -997,7 +1007,7 @@ function parseJSON(text){
     if(dist>300)dist/=1000;                       // метры
     let min=parseFloat(String(f.dur||0))||0;
     if(min>600)min/=60;                            // секунды
-    if(pushRun(D.d,D.h,dist,min,'json'))add++;else skip++;
+    if(pushRun(D.d,D.h,dist,min,'json',{hr:Math.round(f.hr)||0}))add++;else skip++;
   }
   return {add,skip,bad:found.length?0:1};
 }
@@ -1029,17 +1039,23 @@ function nextKindBefore(r){
   return prev&&prev.kind==='int'?'cont':'int';
 }
 /* общая точка добавления: дубли режутся по паре «дата + дистанция» */
-function pushRun(d,h,dist,min,src){
+function pushRun(d,h,dist,min,src,extra){
   dist=Math.round(dist*100)/100;
   if(!(dist>0))return false;
   const key=iso(d)+'|'+Math.round(dist*10);
   if(S.runs.some(r=>r.date+'|'+Math.round(r.dist*10)===key))return false;
-  S.runs.push({id:'i'+S.runs.length+Date.now().toString(36),date:iso(d),dist,
-    min:Math.round((min||0)*10)/10,h,src});
+  const r={id:'i'+S.runs.length+Date.now().toString(36),date:iso(d),dist,
+    min:Math.round((min||0)*10)/10,h,src};
+  // пустые поля не храним, чтобы не мусорить в облаке
+  if(extra)for(const k of ['hr','hrMax','kcal','up'])if(extra[k])r[k]=extra[k];
+  S.runs.push(r);
   return true;
 }
 
-/* ---------- TCX и GPX ---------- */
+/* ---------- TCX и GPX ----------
+   Берём всё, что файл вообще может дать: кроме даты, дистанции и времени —
+   пульс (средний и максимальный), калории и набор высоты. Если ничего этого
+   в выгрузке нет, поля просто останутся пустыми. */
 function parseXML(text){
   let doc;
   try{doc=new DOMParser().parseFromString(text,'application/xml')}catch(e){return {add:0,skip:0,bad:1}}
@@ -1048,20 +1064,27 @@ function parseXML(text){
   const num=(el,n)=>{const x=tag(el,n)[0];return x?parseFloat(x.textContent)||0:0};
   let add=0,skip=0;
 
-  // TCX: дистанция и время лежат в кругах
   for(const a of tag(doc,'Activity')){
     const sport=(a.getAttribute('Sport')||'')+' '+(tag(a,'Notes')[0]?.textContent||'');
     if(isNotRun(sport))continue;
     const laps=tag(a,'Lap');
-    let dist=0,sec=0;
-    for(const l of laps){dist+=num(l,'DistanceMeters');sec+=num(l,'TotalTimeSeconds')}
-    let when=tag(a,'Id')[0]?.textContent||(laps[0]&&laps[0].getAttribute('StartTime'));
+    let dist=0,sec=0,kcal=0,hrSum=0,hrN=0,hrMax=0;
+    for(const l of laps){
+      dist+=num(l,'DistanceMeters');sec+=num(l,'TotalTimeSeconds');kcal+=num(l,'Calories');
+      const avg=tag(l,'AverageHeartRateBpm')[0],mx=tag(l,'MaximumHeartRateBpm')[0];
+      if(avg){const v=parseFloat(tag(avg,'Value')[0]?.textContent||avg.textContent)||0;if(v){hrSum+=v;hrN++}}
+      if(mx){const v=parseFloat(tag(mx,'Value')[0]?.textContent||mx.textContent)||0;hrMax=Math.max(hrMax,v)}
+    }
+    const when=tag(a,'Id')[0]?.textContent||(laps[0]&&laps[0].getAttribute('StartTime'));
     const t=when?new Date(when):null;
     if(!t||isNaN(+t))continue;
     if(dist<=0)dist=trackLength(a,'Trackpoint');
-    if(pushRun(t,t.getHours(),dist/1000,sec/60,'tcx'))add++;else skip++;
+    // пульса не было в кругах — соберём по точкам трека
+    if(!hrN){const s=hrSeries(a,'Trackpoint');if(s.n){hrSum=s.sum/s.n;hrN=1;hrMax=Math.max(hrMax,s.max)}}
+    const extra={hr:hrN?Math.round(hrSum/hrN):0,hrMax:Math.round(hrMax)||0,
+                 kcal:Math.round(kcal)||0,up:Math.round(elevGain(a,'Trackpoint'))||0};
+    if(pushRun(t,t.getHours(),dist/1000,sec/60,'tcx',extra))add++;else skip++;
   }
-  // GPX: считаем по точкам трека
   for(const tr of tag(doc,'trk')){
     const nm=(tag(tr,'name')[0]?.textContent||'')+' '+(tag(tr,'type')[0]?.textContent||'');
     if(isNotRun(nm))continue;
@@ -1071,10 +1094,39 @@ function parseXML(text){
     const t=times.length?new Date(times[0]):null;
     if(!t||isNaN(+t))continue;
     const sec=times.length>1?(new Date(times[times.length-1])-t)/1000:0;
-    const dist=trackLength(tr,'trkpt');
-    if(pushRun(t,t.getHours(),dist/1000,sec/60,'gpx'))add++;else skip++;
+    const hs=hrSeries(tr,'trkpt');
+    const extra={hr:hs.n?Math.round(hs.sum/hs.n):0,hrMax:Math.round(hs.max)||0,kcal:0,
+                 up:Math.round(elevGain(tr,'trkpt'))||0};
+    if(pushRun(t,t.getHours(),trackLength(tr,'trkpt')/1000,sec/60,'gpx',extra))add++;else skip++;
   }
   return {add,skip,bad:0};
+}
+/* пульс из точек трека: у Garmin он в HeartRateBpm, у GPX — в расширениях */
+function hrSeries(root,tagName){
+  let sum=0,n=0,max=0;
+  for(const p of root.getElementsByTagName(tagName)){
+    let v=0;
+    const h=p.getElementsByTagName('HeartRateBpm')[0];
+    if(h)v=parseFloat(h.getElementsByTagName('Value')[0]?.textContent||h.textContent)||0;
+    if(!v)for(const e of p.getElementsByTagName('*')){
+      if(/(^|:)(hr|heartrate)$/i.test(e.tagName)){v=parseFloat(e.textContent)||0;break}
+    }
+    if(v>30&&v<230){sum+=v;n++;max=Math.max(max,v)}
+  }
+  return {sum,n,max};
+}
+/* набор высоты: считаем только подъёмы больше метра, чтобы не ловить дрожь высотомера */
+function elevGain(root,tagName){
+  let up=0,prev=null;
+  for(const p of root.getElementsByTagName(tagName)){
+    const e=p.getElementsByTagName('AltitudeMeters')[0]||p.getElementsByTagName('ele')[0];
+    if(!e)continue;
+    const v=parseFloat(e.textContent);
+    if(isNaN(v))continue;
+    if(prev!==null&&v-prev>1)up+=v-prev;
+    if(prev===null||Math.abs(v-prev)>1)prev=v;
+  }
+  return up;
 }
 function isNotRun(s){return /bik|cycl|ride|swim|велос|плаван|walk|hik/i.test(s||'')}
 /* длина трека по координатам, метры */
@@ -1146,7 +1198,9 @@ function parseCSV(text){
     let dist=parseFloat(String(c[iDist]||'').replace(/\s/g,'').replace(',','.'));
     if(!dist||dist<=0)continue;
     if(dist>300)dist=dist/1000; // метры
-    if(pushRun(D.d,D.h,dist,parseTime(iTime>=0?c[iTime]:''),'csv'))add++;else skip++;
+    const iHr=find(/average heart rate/,/средний пульс/,/^hr$/);
+    const hr=iHr>=0?Math.round(parseFloat(String(c[iHr]||'').replace(',','.'))||0):0;
+    if(pushRun(D.d,D.h,dist,parseTime(iTime>=0?c[iTime]:''),'csv',{hr}))add++;else skip++;
   }
   return {add,skip,bad:0};
 }
