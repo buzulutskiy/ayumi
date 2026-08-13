@@ -179,7 +179,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
 
 <nav class="tabbar"><div class="in">
   <button class="tb" data-tab="today"><i class="i">🎯</i>Сегодня</button>
-  <button class="tb" data-tab="plan"><i class="i">🗓</i>План</button>
+  <button class="tb" data-tab="plan"><i class="i">📋</i>Занятия</button>
   <button class="tb" data-tab="stats"><i class="i">📈</i>Прогресс</button>
   <button class="tb" data-tab="route"><i class="i">🗺</i>Путь</button>
   <button class="tb" data-tab="more"><i class="i">⚙️</i>Ещё</button>
@@ -216,14 +216,7 @@ function km(x){const v=Math.round(x*10)/10;return (v%1===0?String(v):v.toFixed(1
 function pace(minutes,dist){if(!minutes||!dist)return null;const p=minutes/dist;const m=Math.floor(p);const s=Math.round((p-m)*60);return m+':'+String(s===60?0:s).padStart(2,'0')}
 function plural(n,a,b,c){const m=n%100;if(m>=11&&m<=14)return c;const k=n%10;return k===1?a:(k>=2&&k<=4?b:c)}
 
-/* ==================== цели ==================== */
-const GOALS={
-  habit:{name:'Просто бегать',   tag:'регулярность без цели', weeks:26,peakMin:150,longMin:50},
-  ten:  {name:'Подольше',        tag:'час бега за раз',       weeks:26,peakMin:210,longMin:70},
-  half: {name:'Сильно дольше',   tag:'до двух часов',         weeks:26,peakMin:300,longMin:110},
-};
-/* план по умолчанию — никаких вопросов на входе */
-function defaultProfile(){return {goal:'habit',days:2,base:8,skip:0,start:iso(monday(today())),created:iso(today())}}
+function defaultProfile(){return {created:iso(today())}}
 
 /* ==================== маршруты ====================
    Набеганные километры откладываются по реальной карте. Каждая остановка — факт. */
@@ -275,52 +268,84 @@ const STOPS=(()=>{const a=[];let off=0;
   return a})();
 const ROUTE_TOTAL=STOPS[STOPS.length-1].abs;
 
-/* ==================== лестница занятий ====================
-   Первая фаза строится по образцу NHS Couch to 5K: 5 минут шагом на разогрев,
-   отрезки бега через ходьбу, 5 минут шагом на остывание. Отличие одно —
-   добавлены две промежуточные ступени (15 и 19) перед прыжками на 20 и 25 минут
-   непрерывного бега: у NHS программа рассчитана на 3 занятия в неделю, а тут их
-   может быть два, и подходить к этим ступеням лучше плавнее.
-   Прогресс идёт по занятиям, а не по календарю: пропустил неделю — просто
-   продолжаешь с той же ступени, ничего не сгорает. */
-/* Занятие = ровно то, что выставляется на часах: работа, отдых, повторов.
-   Разминку и заминку он отсчитывает сам, поэтому они вне блока. */
+/* ==================== занятие ====================
+   Расписания нет. Есть одно следующее занятие, которое собирается из
+   прошлого опыта: сколько получилось в прошлый раз и как это далось.
+   Тип чередуется — интервалы, потом непрерывный бег, и снова интервалы. */
 function T_(work,rest,reps,restType){return {work,rest:reps>1?rest:0,reps,restType:restType||'walk'}}
-const LADDER=(()=>{
-  const L=[],add=(n,t)=>{for(let i=0;i<n;i++)L.push(t)};
-  add(3,T_(1,1.5,8));    // 1–3    8 мин бега
-  add(3,T_(1.5,1.5,7));  // 4–6    10,5
-  add(3,T_(2,1.5,6));    // 7–9    12
-  add(3,T_(3,1.5,5));    // 10–12  15
-  add(2,T_(4,1.5,4));    // 13–14  16
-  add(3,T_(5,1.5,4));    // 15–17  20
-  add(2,T_(7,2,3));      // 18–19  21
-  add(2,T_(8,2,3));      // 20–21  24
-  add(2,T_(12,3,2));     // 22–23  24
-  add(2,T_(15,2,2));     // 24–25  30
-  add(2,T_(20,0,1));     // 26–27  20 непрерывно
-  add(2,T_(25,0,1));     // 28–29  25
-  add(3,T_(30,0,1));     // 30–32  30
-  return L;
-})();
 const WARM=5,COOL=5,WALK_PACE=9;   // разминка, заминка и темп шага, мин/км
 const REST_NAME={walk:'шагом',jog:'трусцой'};
+const L0=8;                        // минут бега в первом занятии
+
+/* Как далось занятие — единственный вопрос, который приложение задаёт. */
+const RPE=[
+  {v:1,t:'Легко',        d:'Мог бы ещё столько же',            k:1.14},
+  {v:2,t:'Нормально',    d:'Устал, но бежал ровно',            k:1.07},
+  {v:3,t:'Тяжело',       d:'Последние отрезки дались с трудом',k:1.00},
+  {v:4,t:'Очень тяжело', d:'Пришлось сбавить или перейти на шаг',k:0.88},
+];
+const RPEK=v=>(RPE.find(x=>x.v===v)||{k:1.03}).k;
 
 function runMin(t){return Math.round(t.work*t.reps*10)/10}
 function restMin(t){return Math.round(t.rest*(t.reps-1)*10)/10}
 function allMin(t){return Math.round((WARM+COOL+runMin(t)+restMin(t))*10)/10}
 function estKm(t,pace){
   const rest=t.restType==='jog'?restMin(t)/(pace*1.1):restMin(t)/WALK_PACE;
-  return Math.round((runMin(t)/(t.restType==='jog'?pace*.85:pace)+rest+(WARM+COOL)/WALK_PACE)*10)/10;
+  return Math.round((runMin(t)/(t.restType==='jog'?pace*.9:pace)+rest+(WARM+COOL)/WALK_PACE)*10)/10;
 }
 function clock(m){const w=Math.floor(m),s=Math.round((m-w)*60);return `${w}:${String(s).padStart(2,'0')}`}
 function mins(m){return km(m)+' мин'}
-function planText(t){
-  return t.reps>1
-    ? `${t.reps} × ${mins(t.work)} бегом через ${mins(t.rest)} ${REST_NAME[t.restType]}`
-    : `${mins(t.work)} бегом без перерыва`;
+function sortedRuns(){return S.runs.slice().sort((a,b)=>a.date<b.date?-1:1)}
+
+/* Уровень — сколько минут бега приложение считает посильными сейчас.
+   Он не хранится, а пересчитывается из всей истории: ответы про самочувствие
+   двигают его вверх или вниз, длинный перерыв откатывает назад. */
+function levelNow(){
+  const R=sortedRuns();
+  let L=L0;
+  for(const r of R){
+    // шаг не больше 14% за занятие — это и есть защита от резкого скачка
+    if(r.rpe)L*=RPEK(r.rpe);
+    else if(r.min)L=Math.max(L,Math.min(L*1.1,r.min*0.6)); // старые данные без ответа тянут мягко
+    L=Math.max(6,Math.min(90,L));
+  }
+  const last=R[R.length-1];
+  if(last){
+    const gap=daysBetween(fromISO(last.date),today());
+    if(gap>28)L*=0.7; else if(gap>14)L*=0.85;
+  }
+  return Math.max(6,Math.min(90,Math.round(L*2)/2));
 }
-/* Строки ровно под поля на часах */
+function nextKind(){
+  const R=sortedRuns().filter(r=>r.kind);
+  const last=R[R.length-1];
+  return last&&last.kind==='int'?'cont':'int';
+}
+/* Чем выше уровень, тем длиннее рабочий отрезок и короче отдых. */
+const INT_TABLE=[[10,1,1.5],[13,1.5,1.5],[16,2,1.5],[20,3,1.5],[25,4,1.5],[32,5,2],[45,6,2],[999,8,2]];
+function buildSession(L,kind,pace){
+  if(kind==='cont'){
+    const work=Math.max(5,Math.round(L*0.75));
+    return makeSession(T_(work,0,1),pace,'cont',{
+      title:'Непрерывный бег',
+      goal:`Пробежать ${mins(work)} и ни разу не перейти на шаг. Скорость не важна.`});
+  }
+  const row=INT_TABLE.find(r=>L<r[0]);
+  const work=row[1],rest=row[2];
+  const reps=Math.max(3,Math.round(L/work));
+  return makeSession(T_(work,rest,reps),pace,'int',{
+    title:'Интервалы',
+    goal:`Отбежать все ${reps} ${plural(reps,'отрезок','отрезка','отрезков')} целиком. Последний не медленнее первого.`});
+}
+function makeSession(t,pace,kind,extra){
+  return Object.assign({t,kind,type:kind==='int'?'intervals':'long',
+    work:t.work,rest:t.rest,reps:t.reps,
+    runMin:runMin(t),allMin:allMin(t),dist:estKm(t,pace),
+    plan:t.reps>1?`${t.reps} × ${mins(t.work)} бегом через ${mins(t.rest)} ${REST_NAME[t.restType]}`
+                 :`${mins(t.work)} бегом без перерыва`,
+    watch:watchRows(t)},extra||{});
+}
+/* Строки ровно под поля интервального таймера на часах */
 function watchRows(t){
   const rows=[['Разминка',`${WARM} мин шагом`],['Работа',clock(t.work)]];
   if(t.reps>1)rows.push(['Отдых',`${clock(t.rest)} ${REST_NAME[t.restType]}`]);
@@ -329,145 +354,51 @@ function watchRows(t){
   return rows;
 }
 
-function makeSession(t,day,pace,kind,extra){
-  return Object.assign({day,t,kind,
-    type:kind==='intervals'?'intervals':(kind==='long'?'long':'easy'),
-    work:t.work,rest:t.rest,reps:t.reps,
-    runMin:runMin(t),allMin:allMin(t),dist:estKm(t,pace),
-    plan:planText(t),watch:watchRows(t)},extra||{});
+/* Всё состояние приложения в одном месте. */
+function plan(){
+  const paceRaw=easyPace(),pace=paceRaw||8.5;
+  const L=levelNow(),kind=nextKind();
+  const R=sortedRuns();
+  const last=R[R.length-1];
+  return {L,kind,pace,paceKnown:!!paceRaw,
+    next:buildSession(L,kind,pace),
+    other:buildSession(L,kind==='int'?'cont':'int',pace),
+    done:R.length,last,
+    gap:last?daysBetween(fromISO(last.date),today()):null,
+    pending:R.filter(r=>!r.rpe&&r.kind).slice(-1)[0]||null,
+    cadence:cadenceDays(),kmPer:kmPerSession(pace,L)};
 }
-function ladderSession(idx,day,pace){
-  const i=Math.min(idx,LADDER.length-1),t=LADDER[i];
-  const cont=t.reps===1;
-  return makeSession(t,day,pace,cont?'long':'easy',{
-    phase:'ladder',step:i+1,total:LADDER.length,
-    title:cont?'Непрерывный бег':'Бег с ходьбой',
-    goal:cont?`Пробежать ${mins(t.work)} и ни разу не перейти на шаг.`
-             :`Отбежать все ${t.reps} ${plural(t.reps,'отрезок','отрезка','отрезков')} целиком. Скорость не важна совсем.`});
-}
-
-/* ==================== движок плана ====================
-   Всё считается в минутах: это то, что выставляется на часах.
-   Километры — побочный результат, они нужны только для маршрута.
-   Фаза 1 — лестница по занятиям. Фаза 2 — рост недельных минут бега. */
-function buildPlan(){
-  const P=S.profile,G=GOALS[P.goal];
-  const start=monday(fromISO(P.start));
-  const N=G.weeks;
-  const runs=S.runs.slice().sort((a,b)=>a.date<b.date?-1:1);
-  const map={1:[6],2:[2,6],3:[1,3,6],4:[1,3,5,6],5:[0,1,3,5,6],6:[0,1,2,3,5,6]}[P.days]||[2,6];
-  const paceRaw=easyPace(),pace=paceRaw||8.5,paceKnown=!!paceRaw;
-  const weeks=[];
-  const nowWk=Math.floor(daysBetween(start,today())/7);
-  const pos=(P.skip||0)+runs.filter(r=>{const d=fromISO(r.date);return d>=start&&d<=today()}).length;
-  const ladderLeft=Math.max(0,LADDER.length-pos);
-
-  let trend=0;                      // недельные минуты бега для фазы 2
-  let longCap=maxRecentMin(pace);   // потолок одного занятия, минуты
-  let cursor=(P.skip||0);
-
-  for(let i=0;i<N;i++){
-    const wStart=addDays(start,i*7),wEnd=addDays(wStart,6);
-    const state=i<nowWk?'past':(i===nowWk?'now':'future');
-    const wRuns=runs.filter(r=>{const d=fromISO(r.date);return d>=wStart&&d<=wEnd});
-    const actual=Math.round(wRuns.reduce((s,r)=>s+r.dist,0)*10)/10;
-    const actualMin=Math.round(wRuns.reduce((s,r)=>s+(r.min||r.dist*pace),0));
-
-    let w;
-    if(cursor<LADDER.length){
-      const ses=map.map((d,k)=>ladderSession(cursor+k,d,pace));
-      w={i,start:wStart,end:wEnd,phase:'ladder',deload:false,sessions:ses,
-         planned:Math.round(ses.reduce((s,x)=>s+x.dist,0)*10)/10,
-         plannedMin:ses.reduce((s,x)=>s+x.runMin,0),
-         runs:wRuns,actual,actualMin,state,
-         note:state==='past'?(wRuns.length>=ses.length?'пройдено':(wRuns.length?'частично':'пропущено')):''};
-      cursor+=state==='future'?map.length:wRuns.length;
-      trend=Math.max(trend,w.plannedMin);
-      if(state!=='future')longCap=Math.max(longCap,...wRuns.map(r=>r.min||r.dist*pace),0);
-    } else {
-      const deload=(i%4===3);
-      const volMin=Math.min(G.peakMin,Math.round(deload?trend*.8:trend));
-      const ses=buildWeek(volMin,map,longCap,G,pace,i);
-      w={i,start:wStart,end:wEnd,phase:'build',deload,sessions:ses,
-         planned:Math.round(ses.reduce((s,x)=>s+x.dist,0)*10)/10,
-         plannedMin:ses.reduce((s,x)=>s+x.runMin,0),runs:wRuns,actual,actualMin,state,note:''};
-      const ratio=w.plannedMin>0?actualMin/w.plannedMin:0;
-      if(state==='past'){
-        if(ratio>=.9){trend*=1.1;w.note='выполнено — время выросло'}
-        else if(ratio>=.6){w.note='почти — держим время'}
-        else if(ratio>0){trend*=.9;w.note='недобор — сбавили'}
-        else{trend*=.85;w.note='пропущено'}
-        longCap=Math.max(longCap,...wRuns.map(r=>r.min||r.dist*pace),0);
-      } else if(!deload){trend*=1.1}
-      trend=Math.min(trend,G.peakMin);
-      // потолок для планирования вперёд растёт вместе с длинной тренировкой
-      if(state==='future')longCap=Math.max(longCap,Math.max(...ses.map(x=>x.runMin)));
-    }
-    w.ratio=w.phase==='ladder'
-      ? (w.sessions.length?Math.min(1.2,wRuns.length/w.sessions.length):0)
-      : (w.plannedMin>0?actualMin/w.plannedMin:0);
-    weeks.push(w);
+/* Как часто он бегает на самом деле — медиана промежутков между пробежками. */
+function cadenceDays(){
+  const R=sortedRuns();
+  if(R.length<3)return 3.5;
+  const g=[];
+  for(let i=1;i<R.length;i++){
+    const d=daysBetween(fromISO(R[i-1].date),fromISO(R[i].date));
+    if(d>0&&d<30)g.push(d);
   }
-  return {weeks,start,goal:G,nowWk,pos,pace,paceKnown,ladderLeft,map,
-          phase:weeks[Math.min(nowWk,N-1)]?.phase||'build'};
+  if(!g.length)return 3.5;
+  g.sort((a,b)=>a-b);
+  return Math.max(1.5,Math.min(10,g[Math.floor(g.length/2)]));
 }
-
-/* Фаза 2. Одно занятие не растёт больше чем на 10% от самого длинного за месяц:
-   резкий скачок одной пробежки предсказывает травмы лучше, чем недельный объём. */
-function buildWeek(volMin,map,longCap,G,pace,wi){
-  const share=map.length<=2?.55:(map.length===3?.42:.34);
-  const cap=Math.max(20,Math.round(longCap*1.1));
-  const long=map.length===1?Math.min(volMin,cap):Math.min(G.longMin,cap,Math.round(volMin*share));
-  const rest=volMin-long,other=map.length-1;
-  // лёгкая не должна догонять длинную, иначе длинная перестаёт быть длинной
-  const easy=other>0?Math.min(Math.round(long*.75),Math.round(rest/other)):0;
-  const hard=(volMin>=80&&other>=1&&wi%2===0)?1:0;
-  return map.map((d,k)=>{
-    if(k===map.length-1)
-      return makeSession(T_(long,0,1),d,pace,'long',{phase:'build',title:'Длинная',
-        goal:`Пробежать ${mins(long)} целиком, ровно и медленно. На секундомер не смотреть.`});
-    if(hard&&k===0){
-      const n=Math.max(4,Math.min(10,Math.round(easy/2)));
-      return makeSession(T_(2,2,n,'jog'),d,pace,'intervals',{phase:'build',title:'Ускорения',
-        goal:'Все ускорения одинаковые: последнее не медленнее первого. Провалилось последнее — в следующий раз делай на один меньше.'});
-    }
-    return makeSession(T_(easy,0,1),d,pace,'easy',{phase:'build',title:'Лёгкая',
-      goal:`${mins(easy)} в разговорном темпе, без ускорений.`});
-  }).filter(x=>x.runMin>=5);
+function kmPerSession(pace,L){
+  const R=sortedRuns().filter(r=>r.dist>0).slice(-6);
+  if(R.length>=3){const d=R.map(r=>r.dist).sort((a,b)=>a-b);return d[Math.floor(d.length/2)]}
+  return Math.max(1.5,Math.round((L/pace+(WARM+COOL)/WALK_PACE)*10)/10);
 }
-
-/* Темп лёгкого бега берём из своих же данных, а не из таблиц. */
 function easyPace(){
   const R=S.runs.filter(r=>r.min>0&&r.dist>=1).slice(-10);
   if(R.length<3)return 0;
   const p=R.map(r=>r.min/r.dist).sort((a,b)=>a-b);
-  return Math.max(5,Math.min(12,p[Math.floor(p.length/2)]));
-}
-function maxRecentMin(pace){
-  const from=addDays(today(),-30);
-  const R=S.runs.filter(r=>fromISO(r.date)>=from);
-  return R.length?Math.max(...R.map(r=>r.min||r.dist*pace)):0;
-}
-
-/* сопоставление пробежек с днями недели */
-function matchWeek(w){
-  const left=w.runs.slice();
-  const out=w.sessions.map(s=>({...s,done:null}));
-  // сначала точное совпадение по дню недели
-  for(const s of out){
-    const i=left.findIndex(r=>dow(fromISO(r.date))===s.day);
-    if(i>=0){s.done=left.splice(i,1)[0]}
-  }
-  // остальное — по порядку
-  for(const r of left){const s=out.find(x=>!x.done);if(s)s.done=r;else out.push({day:dow(fromISO(r.date)),type:'easy',title:'Внеплановая',dist:r.dist,detail:'',done:r,extra:true})}
-  return out.sort((a,b)=>a.day-b.day);
+  return Math.max(4,Math.min(14,p[Math.floor(p.length/2)]));
 }
 
 /* ==================== статистика ==================== */
-function stats(plan){
-  const R=S.runs.slice().sort((a,b)=>a.date<b.date?-1:1);
+function stats(P){
+  const R=sortedRuns();
   const total=R.reduce((s,r)=>s+r.dist,0);
   const longest=R.reduce((m,r)=>Math.max(m,r.dist),0);
+  const longestMin=R.reduce((m,r)=>Math.max(m,r.min||0),0);
   const byMonth={},byWeek={};
   for(const r of R){
     byMonth[r.date.slice(0,7)]=(byMonth[r.date.slice(0,7)]||0)+r.dist;
@@ -475,22 +406,72 @@ function stats(plan){
   }
   const weekMax=Math.max(0,...Object.values(byWeek));
   const monthMax=Math.max(0,...Object.values(byMonth));
-  // серия недель, закрытых на 90%+
+  // серия: сколько занятий подряд без перерыва длиннее двух недель
   let streak=0,best=0;
-  for(const w of plan.weeks){
-    if(w.state==='future')break;
-    if(w.state==='now'&&w.ratio<.9)continue;
-    if(w.ratio>=.9){streak++;best=Math.max(best,streak)}else if(w.state==='past')streak=0;
+  for(let i=0;i<R.length;i++){
+    const gap=i?daysBetween(fromISO(R[i-1].date),fromISO(R[i].date)):0;
+    streak=(i&&gap>14)?1:streak+1;
+    best=Math.max(best,streak);
   }
-  const paced=R.filter(r=>r.min>0&&r.dist>=2);
-  const avgPace=(a)=>a.length?a.reduce((s,r)=>s+r.min,0)/a.reduce((s,r)=>s+r.dist,0):0;
-  const p0=avgPace(paced.slice(0,5)),p1=avgPace(paced.slice(-5));
+  const paced=R.filter(r=>r.min>0&&r.dist>=1);
+  const avg=a=>a.length?a.reduce((s,r)=>s+r.min,0)/a.reduce((s,r)=>s+r.dist,0):0;
+  const p0=avg(paced.slice(0,5)),p1=avg(paced.slice(-5));
   const gain=(paced.length>=8&&p0&&p1)?(p0-p1)*60:0;
-  const done=plan.weeks.filter(w=>w.state==='past'&&w.ratio>=.9).length;
-  return {R,total,longest,count:R.length,byMonth,byWeek,weekMax,monthMax,streak,best,gain,
+  return {R,total,longest,longestMin,count:R.length,byMonth,byWeek,weekMax,monthMax,streak,best,gain,
     early:R.some(r=>r.h!=null&&r.h<7),night:R.some(r=>r.h!=null&&r.h>=21),
-    weeksDone:done,progWeeks:plan.nowWk,totalWeeks:plan.goal.weeks,
-    curPace:p1?pace(p1,1):null};
+    level:P.L,curPace:p1?pace(p1,1):null};
+}
+
+/* ==================== индекс бегуна ====================
+   Из файла приходят только дистанция и время, поэтому берём то, что из них
+   действительно выводится: оценку VO2max по формулам Дэниелса и Гилберта (1979).
+   Первая считает кислородную стоимость скорости, вторая — какую долю максимума
+   человек способен держать столько минут; отношение и есть VDOT.
+   Считаем только по непрерывному бегу: в интервальном занятии средний темп
+   размазан ходьбой и сравнивать его не с чем. */
+function vdotOf(distKm,minutes){
+  if(!(distKm>=1)||!(minutes>=5))return 0;
+  const v=distKm*1000/minutes;                       // метров в минуту
+  const vo2=-4.60+0.182258*v+0.000104*v*v;
+  const pct=0.8+0.1894393*Math.exp(-0.012778*minutes)+0.2989558*Math.exp(-0.1932605*minutes);
+  return vo2/pct;
+}
+function median(a){if(!a.length)return 0;const b=a.slice().sort((x,y)=>x-y);return b[Math.floor(b.length/2)]}
+const WIN=42;                                        // окно наблюдения, дней
+function indexWindow(from,to){
+  const R=S.runs.filter(r=>{const d=fromISO(r.date);return d>addDays(today(),-to)&&d<=addDays(today(),-from)});
+  const cont=R.filter(r=>r.kind!=='int'&&r.min>=5&&r.dist>=1);
+  const easy=R.filter(r=>r.min>0&&r.dist>=1&&(!r.rpe||r.rpe<=2));
+  return {
+    n:R.length,
+    vdot:cont.length?Math.max(...cont.map(r=>vdotOf(r.dist,r.min))):0,
+    endur:cont.length?Math.max(...cont.map(r=>r.min)):0,
+    pace:easy.length?median(easy.map(r=>r.min/r.dist)):0,
+  };
+}
+/* Направление: лучше, так же или хуже. Порог нужен, чтобы шум не выдавался за рост. */
+function dir(cur,prev,higherBetter,tol){
+  if(!cur||!prev)return null;
+  const d=(cur-prev)/prev;
+  if(Math.abs(d)<tol)return {s:'same',t:'без изменений',v:0};
+  const better=higherBetter?d>0:d<0;
+  return {s:better?'up':'down',t:better?'лучше':'хуже',v:Math.abs(d)};
+}
+function runnerIndex(){
+  const cur=indexWindow(0,WIN),prev=indexWindow(WIN,WIN*2);
+  return {cur,prev,
+    vdotDir:dir(cur.vdot,prev.vdot,true,.02),
+    endurDir:dir(cur.endur,prev.endur,true,.05),
+    paceDir:dir(cur.pace,prev.pace,false,.02),
+    score:cur.vdot?Math.round(cur.vdot):0};
+}
+/* Словами: что вообще значит это число */
+function vdotWord(v){
+  if(v<30)return 'начальный уровень';
+  if(v<38)return 'уверенный любитель';
+  if(v<46)return 'хорошая форма';
+  if(v<54)return 'сильный любитель';
+  return 'высокий уровень';
 }
 
 /* ==================== награды ==================== */
@@ -510,232 +491,176 @@ const AWARDS=[
   {id:'w30',ic:'📦',t:'30 за неделю',d:'Недельный объём',g:s=>[s.weekMax,30]},
   {id:'w50',ic:'🚚',t:'50 за неделю',d:'Недельный объём',g:s=>[s.weekMax,50]},
   {id:'m100',ic:'🗓',t:'100 за месяц',d:'Календарный месяц',g:s=>[s.monthMax,100]},
-  {id:'s4',ic:'🔥',t:'Месяц по плану',d:'4 недели подряд',g:s=>[s.best,4]},
-  {id:'s12',ic:'💎',t:'Квартал по плану',d:'12 недель подряд',g:s=>[s.best,12]},
+  {id:'s4',ic:'🔥',t:'Без пауз',d:'8 занятий без длинного перерыва',g:s=>[s.best,8]},
+  {id:'s12',ic:'💎',t:'Втянулся',d:'25 занятий без длинного перерыва',g:s=>[s.best,25]},
   {id:'early',ic:'🌅',t:'Ранняя пташка',d:'Побежал до 7 утра',g:s=>[s.early?1:0,1]},
   {id:'night',ic:'🌙',t:'Ночной',d:'Побежал после 21:00',g:s=>[s.night?1:0,1]},
   {id:'pace',ic:'⚡️',t:'Быстрее',d:'Темп вырос на 20 с/км',g:s=>[Math.max(0,s.gain),20]},
-  {id:'half',ic:'🧭',t:'Экватор',d:'Половина программы',g:s=>[s.progWeeks,13]},
-  {id:'fin',ic:'👑',t:'Программа',d:'26 недель пройдено',g:s=>[s.progWeeks,26]},
+  {id:'m20',ic:'🧭',t:'Двадцатка',d:'20 минут бега за раз',g:s=>[s.longestMin,20]},
+  {id:'m45',ic:'👑',t:'Сорок пять',d:'45 минут бега за раз',g:s=>[s.longestMin,45]},
 ];
 function awardState(s){return AWARDS.map(a=>{const[c,t]=a.g(s);return{...a,cur:c,tgt:t,got:c>=t}})}
 
 /* ==================== рендер ==================== */
 const app=document.getElementById('app');
 function render(){
-  const plan=buildPlan(),st=stats(plan);
+  const P=plan(),st=stats(P);
   document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
-  const v={today:vToday,plan:vPlan,stats:vStats,route:vRoute,more:vMore}[S.tab]||vToday;
-  app.innerHTML=v(plan,st);
+  const v={today:vToday,plan:vSessions,stats:vStats,route:vRoute,more:vMore}[S.tab]||vToday;
+  app.innerHTML=v(P,st);
   window.scrollTo(0,0);
   checkNew(st);
 }
 
-/* ---------- СЕГОДНЯ ---------- */
-/* Карточка занятия: что выставить на часах, с каким темпом и зачем. */
-function heroSession(s,w,plan,mode,yest){
-  const band=plan.paceKnown
-    ? `${pace(plan.pace*0.94,1)}–${pace(plan.pace*1.12,1)} /км — это твой обычный лёгкий темп по загруженным пробежкам.`
+/* ---------- ЗАНЯТИЕ ---------- */
+function heroSession(x,P,alt){
+  const band=P.paceKnown
+    ? `${pace(P.pace*0.94,1)}–${pace(P.pace*1.12,1)} /км — твой обычный лёгкий темп по загруженным пробежкам.`
     : 'медленнее, чем кажется правильным.';
   return `<div class="hero"><div class="glow"></div>
-    <span class="type ${s.kind==='intervals'?'blue':''}">${s.title}</span>
-    <div class="big">${km(s.runMin)} <span>мин бега</span></div>
-    <div class="det">${s.plan}</div>
-    ${mode==='свободный'?`<div class="det" style="margin-top:10px;color:var(--tx)">По расписанию сегодня свободный день, но занятие ждёт тебя — беги, если хочется. Следующие просто сдвинутся${yest?'. Вчера ты уже бежал: если тело просит паузу, это тоже нормальный ответ':''}.</div>`:''}
+    <span class="type ${x.kind==='int'?'blue':''}">${x.title}</span>
+    <div class="big">${km(x.runMin)} <span>мин бега</span></div>
+    <div class="det">${x.plan}</div>
     <div class="watch">
       <div class="lbl" style="margin-bottom:7px">На часы</div>
-      ${s.watch.map(([k,v])=>`<div class="wl"><span>${k}</span><b>${v}</b></div>`).join('')}
+      ${x.watch.map(([k,v])=>`<div class="wl"><span>${k}</span><b>${v}</b></div>`).join('')}
       <div class="hint" style="margin-top:9px;font-size:12px">Разминку и заминку отсчитываешь сам, в интервальный таймер идут только работа, отдых и повторы.</div>
     </div>
     <div class="why"><b style="font-weight:600;color:var(--tx)">Темп:</b> ${band} Проверка простая — на бегу можешь сказать фразу из пяти слов и не задохнуться. Не можешь — сбавь, это не ошибка.</div>
-    <div class="why"><b style="font-weight:600;color:var(--tx)">Цель:</b> ${s.goal}</div>
-    <div class="why">${s.phase==='ladder'
-      ? `Ступень ${s.step} из ${s.total} · всего около ${km(s.allMin)} мин на ногах`
-      : `Неделя ${w.i+1} из ${plan.goal.weeks}${w.deload?' · разгрузочная' :''} · план недели ${km(w.plannedMin)} мин бега, набрано ${km(w.actualMin)}`}</div>
+    <div class="why"><b style="font-weight:600;color:var(--tx)">Цель:</b> ${x.goal}</div>
+    <div class="why">Около ${km(x.allMin)} мин на ногах вместе с разминкой, примерно ${km(x.dist)} км.
+      ${alt?`<br>В прошлый раз были ${P.last&&P.last.kind==='int'?'интервалы':'непрерывный бег'} — сегодня чередуем.`:''}</div>
   </div>`;
 }
-
-function vToday(plan,st){
-  const w=plan.weeks[plan.nowWk];
-  if(!w) return `<div class="top"><h1>Готово</h1></div><div class="card"><h2>Программа пройдена</h2>
-    <div class="hint" style="margin-top:8px">${plan.goal.weeks} ${plural(plan.goal.weeks,'неделя','недели','недель')} позади, ${km(st.total)} км набегано. Можно задать новую цель во вкладке «Ещё».</div></div>`;
-  const M=matchWeek(w),td=dow(today());
-  const mine=M.find(s=>s.day===td&&!s.extra);
-  const doneToday=w.runs.find(r=>r.date===iso(today()));
-  const left=M.filter(s=>!s.done&&!s.extra&&s.day>=td);
-  // дни до установки приложения пропусками не считаем
-  const since=S.profile.created?fromISO(S.profile.created):w.start;
-  const missed=M.filter(s=>!s.done&&!s.extra&&s.day<td&&addDays(w.start,s.day)>=since);
-  const restDays=6-td;
-
-  // Следующее занятие есть всегда — бежать или нет, решает не приложение.
-  const scheduled=!!mine;
-  const nextUp=mine||(w.phase==='ladder'
-    ? ladderSession(plan.pos,td,plan.pace)
-    : (M.find(x=>!x.done&&!x.extra)||plan.weeks[w.i+1]?.sessions[0]));
-  const yest=M.filter(x=>x.done).some(x=>x.done.date===iso(addDays(today(),-1)));
-
-  let hero;
+function vToday(P,st){
+  const doneToday=S.runs.find(r=>r.date===iso(today()));
+  const x=P.next;
+  let head;
   if(doneToday){
-    hero=`<div class="hero"><div class="glow"></div>
+    head=`<div class="hero"><div class="glow"></div>
       <span class="type">Сделано сегодня</span>
-      <div class="big">${km(doneToday.dist)} <span>км</span></div>
-      <div class="det">${doneToday.min?pace(doneToday.min,doneToday.dist)+' /км · '+Math.round(doneToday.min)+' мин':'Отметка вручную'}</div>
-      <div class="why">${w.phase==='ladder'?`Ступень ${Math.min(plan.pos,LADDER.length)} из ${LADDER.length} пройдена. Следующая — ${mins(ladderSession(plan.pos,td,plan.pace).runMin)} бега.`:`Неделя ${w.i+1}: ${km(w.actualMin)} из ${km(w.plannedMin)} мин бега.`}</div></div>`;
-  } else if(nextUp){
-    hero=heroSession(nextUp,w,plan,scheduled?'план':'свободный',yest);
-  } else {
-    hero=`<div class="hero"><div class="glow"></div><span class="type">Готово</span>
-      <div class="big">${LADDER.length}<span> / ${LADDER.length}</span></div>
-      <div class="det">Программа пройдена целиком.</div></div>`;
-  }
+      <div class="big">${km(doneToday.min||0)} <span>мин</span></div>
+      <div class="det">${km(doneToday.dist)} км${doneToday.min?', '+pace(doneToday.min,doneToday.dist)+' /км':''}${doneToday.rpe?' · '+RPE.find(r=>r.v===doneToday.rpe).t.toLowerCase():''}</div>
+      <div class="why">Следующее занятие — ${x.title.toLowerCase()}, ${mins(x.runMin)} бега. Отдохни день-другой.</div></div>`;
+  } else head=heroSession(x,P,!!P.last);
 
   return `
-  <div class="top"><div><h1>${greet()}</h1><div class="sub">${DOW[td]}, ${fmtDate(today())} · неделя ${w.i+1}</div></div>
-    <span class="tag">${plan.goal.name}</span></div>
-  ${hero}
-  <button class="btn" onclick="importSheet()">Загрузить пробежки из файла</button>
-  <button class="btn gh sm" style="margin:8px 0 14px" onclick="addRun(${mine?mine.dist:(left[0]?left[0].dist:5)})">или отметить вручную</button>
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px">
-      <div class="lbl">Неделя ${w.i+1}</div>
-      <div style="font-size:13px;color:var(--mut)">${w.phase==='ladder'
-        ? `<b style="color:var(--tx)">${w.runs.length}</b> из ${w.sessions.length} ${plural(w.sessions.length,'занятия','занятий','занятий')}`
-        : `<b style="color:var(--tx)">${km(w.actualMin)}</b> / ${km(w.plannedMin)} мин бега`}</div>
-    </div>
-    <div class="week">
-      ${[0,1,2,3,4,5,6].map(d=>{
-        const s=M.find(x=>x.day===d);
-        const cls=[s?(s.done?'done':''):'rest',d===td?'today':''].join(' ');
-        const val=s?(s.done?km(Math.round(s.done.min||s.done.dist*plan.pace))+'<span style="font-size:9px"> мин</span>'
-                     :km(s.runMin)+'<span style="font-size:9px"> мин</span>'):'—';
-        return `<div class="day ${cls}"><div class="d">${DOW[d]}</div><div class="n">${val}</div></div>`;
-      }).join('')}
-    </div>
-    ${w.deload?'<div class="hint" style="margin-top:10px">Разгрузочная неделя: объём снижен, тело закрепляет форму.</div>':''}
-    ${missed.length?`<div class="hint" style="margin-top:10px">Пропущено на этой неделе: ${missed.length}. Ничего страшного — догонять всё сразу не нужно, план сам подвинется на следующей неделе.</div>`:''}
-  </div>
-  ${routeStrip(st)}
+  <div class="top"><div><h1>${greet()}</h1><div class="sub">${DOW[dow(today())]}, ${fmtDate(today())}${P.gap!=null?' · '+(P.gap===0?'бежал сегодня':P.gap===1?'вчера бежал':`${P.gap} ${plural(P.gap,'день','дня','дней')} без бега`):''}</div></div>
+    <span class="tag">занятие ${P.done+1}</span></div>
+  ${P.pending?pendingCard(P):''}
+  ${head}
+  <button class="btn" onclick="importSheet()">Загрузить пробежку из файла</button>
+  <button class="btn gh sm" style="margin:8px 0 14px" onclick="addRun(${x.dist})">или отметить вручную</button>
+  ${routeStrip(st,P)}
   <div class="grid">
-    <div class="st"><div class="v">${plan.ladderLeft>0?Math.min(plan.pos+1,LADDER.length):'—'}</div><div class="k">ступень из ${LADDER.length}</div></div>
-    <div class="st"><div class="v">${st.best}</div><div class="k">недель серия</div></div>
-    <div class="st"><div class="v">${st.curPace||'—'}</div><div class="k">темп /км</div></div>
+    <div class="st"><div class="v">${km(P.L)}</div><div class="k">мин — твой уровень</div></div>
+    <div class="st"><div class="v">${st.count}</div><div class="k">занятий сделано</div></div>
+    <div class="st"><div class="v">${runnerIndex().score||'—'}</div><div class="k">индекс бегуна</div></div>
   </div>`;
 }
 function greet(){const h=new Date().getHours();return h<5?'Ночь':h<11?'Утро':h<17?'День':h<23?'Вечер':'Ночь'}
+/* Не ответил, как далось прошлое занятие — спрашиваем ещё раз, от этого зависит следующее */
+function pendingCard(P){
+  const r=P.pending;
+  return `<button class="card" style="display:block;width:100%;text-align:left;border-color:var(--acc-dim);background:linear-gradient(150deg,rgba(216,255,74,.09),var(--card))"
+    onclick="askRpe('${r.id}')">
+    <div class="lbl">Один вопрос</div>
+    <div style="margin-top:6px"><b>Как далась пробежка ${fmtDate(fromISO(r.date))}?</b>
+      <div class="hint">${km(r.dist)} км за ${km(r.min||0)} мин. От ответа зависит следующее занятие.</div></div>
+  </button>`;
+}
 
-/* ---------- ПЛАН ---------- */
-function vPlan(plan,st){
-  return `<div class="top"><div><h1>План</h1><div class="sub">${plan.ladderLeft>0
-    ? `Ступень ${Math.min(plan.pos+1,LADDER.length)} из ${LADDER.length} · старт ${fmtDate(plan.start)}`
-    : `${plan.goal.name} · ${plan.goal.weeks} недель · старт ${fmtDate(plan.start)}`}</div></div></div>
-  ${ringCard(plan,st)}
-  ${plan.ladderLeft>0?ladderCard(plan):''}
-  ${plan.weeks.map(w=>{
-    const M=matchWeek(w);
-    const open=w.state==='now';
-    return `<div class="wk ${open?'open now':''}" id="wk${w.i}">
-      <button class="h" onclick="document.getElementById('wk${w.i}').classList.toggle('open')">
-        <span class="chev">›</span>
-        <span class="ttl"><b>Неделя ${w.i+1}</b><small>${fmtDate(w.start)} – ${fmtDate(w.end)}${w.deload?' · разгрузка':''}${w.note?' · '+w.note:''}</small></span>
-        <span class="km" style="color:${w.state==='past'?(w.ratio>=.9?'var(--acc)':'var(--mut)'):'var(--tx)'}">${w.phase==='ladder'
-          ? (w.state==='future'?`${w.sessions.length} зан.`:`${w.runs.length} / ${w.sessions.length}`)
-          : (w.state==='future'?'':km(w.actualMin)+' / ')+km(w.plannedMin)+' мин'}</span>
-      </button>
-      <div class="body">${M.map(s=>`
-        <div class="ses ${s.type} ${s.done?'ok':''}">
-          <span class="dot"></span>
-          <span class="t">${DOW[s.day]} · ${s.title}${s.step?` <span style="color:var(--mut);font-size:12px">ступень ${s.step}</span>`:''}<small>${s.plan||'Внеплановая пробежка'}</small></span>
-          <span class="k">${s.done?'✓ '+km(Math.round(s.done.min||0))+' мин':km(s.runMin)+' мин'}</span>
-        </div>`).join('')}</div>
-    </div>`}).join('')}
-  <div style="height:20px"></div>`;
-}
-/* Лестница целиком: видно и пройденное, и чем всё кончится. */
-function ladderCard(plan){
-  const pos=plan.pos,rows=[];
-  LADDER.forEach((t,i)=>{
-    const key=t.work+'/'+t.rest+'/'+t.reps;
-    const last=rows[rows.length-1];
-    if(last&&last.key===key){last.to=i;return}
-    rows.push({key,from:i,to:i,t});
-  });
-  return `<div class="card">
-    <div class="lbl">Лестница · ${LADDER.length} занятий</div>
-    <div class="hint" style="margin-top:8px">По образцу NHS Couch to 5K, но пересобрано под одну настройку часов: работа, отдых, повторов. Идём по занятиям, а не по календарю — пропустил неделю, вернулся на ту же ступень.</div>
-    <div style="margin-top:14px">
-    ${rows.map(r=>{
-      const done=pos>r.to,now=pos>=r.from&&pos<=r.to,n=r.to-r.from+1;
-      return `<div class="ses ${done?'ok':''}" style="align-items:flex-start;opacity:${done?.5:1}">
-        <span class="dot" style="margin-top:6px;background:${done?'var(--acc-dim)':(now?'var(--acc)':'var(--line)')}"></span>
-        <span class="t">${r.from+1}${n>1?'–'+(r.to+1):''} · ${km(runMin(r.t))} мин бега${now?' <span style="color:var(--acc);font-size:12px">сейчас здесь</span>':''}
-          <small>${r.t.reps>1?`работа ${clock(r.t.work)} · отдых ${clock(r.t.rest)} · ${r.t.reps} ${plural(r.t.reps,'повтор','повтора','повторов')}`:`работа ${clock(r.t.work)} · без отдыха`}</small></span>
-      </div>`}).join('')}
+/* ---------- ЗАНЯТИЯ ---------- */
+function vSessions(P,st){
+  const R=st.R.slice().reverse();
+  return `<div class="top"><div><h1>Занятия</h1><div class="sub">Расписания нет — следующее собирается из прошлого</div></div></div>
+  <div class="card">
+    <div class="lbl">Следующее</div>
+    <div style="display:flex;gap:12px;align-items:baseline;margin-top:8px">
+      <div style="font-size:30px;font-weight:700;letter-spacing:-.03em">${km(P.next.runMin)}<span style="font-size:15px;color:var(--mut);font-weight:600"> мин</span></div>
+      <div style="flex:1"><b>${P.next.title}</b><div class="hint">${P.next.plan}</div></div>
     </div>
-    <div class="hint" style="margin-top:12px">На ступенях 26–27 бега меньше, чем на 24–25, — и это не ошибка. Там впервые убирается перерыв, а непрерывность сама по себе тяжелее, поэтому объём временно опускается.</div>
-  </div>`;
-}
-function ringCard(plan,st){
-  const p=Math.min(1,plan.nowWk/plan.goal.weeks);
-  const r=52,c=2*Math.PI*r;
-  return `<div class="card" style="display:flex;gap:18px;align-items:center">
-    <svg viewBox="0 0 130 130" style="width:104px;flex:none">
-      <circle cx="65" cy="65" r="${r}" fill="none" stroke="var(--line)" stroke-width="11"/>
-      <circle cx="65" cy="65" r="${r}" fill="none" stroke="var(--acc)" stroke-width="11" stroke-linecap="round"
-        stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p)}" transform="rotate(-90 65 65)"/>
-      <text x="65" y="62" text-anchor="middle" fill="var(--tx)" font-size="27" font-weight="700">${plan.nowWk+1}</text>
-      <text x="65" y="80" text-anchor="middle" fill="var(--mut)" font-size="12">из ${plan.goal.weeks}</text>
-    </svg>
-    <div style="min-width:0">
-      <div class="lbl">Прогресс программы</div>
-      <div style="margin-top:6px;font-size:14px;color:var(--mut);line-height:1.5">
-        Потолок — ${plan.goal.peakMin} мин бега в неделю, длинная до ${plan.goal.longMin} мин.<br>
-        Недель закрыто по плану: <b style="color:var(--tx)">${st.weeksDone}</b>
-      </div>
-    </div></div>`;
+    <div class="hint" style="margin-top:12px">А следом за ним — ${P.other.title.toLowerCase()}, ${mins(P.other.runMin)} бега. Типы чередуются: интервалы учат держать темп, непрерывный бег — держаться дольше.</div>
+  </div>
+  <div class="card">
+    <div class="lbl">Как считается</div>
+    <div class="hint" style="margin-top:8px;line-height:1.65">
+      Сейчас твой уровень — <b style="color:var(--tx)">${km(P.L)} мин бега</b> за занятие. Двигают его только твои ответы после пробежки:
+      «легко» прибавляет 14%, «нормально» — 7%, «тяжело» оставляет как есть, «очень тяжело» снимает 12%.
+      Больше 14% за раз уровень вырасти не может, и это не осторожность ради осторожности: резкий скачок одной пробежки предсказывает травмы лучше, чем недельный объём.
+      Перерыв больше двух недель откатывает уровень на 15%, больше месяца — на 30%, чтобы возвращение было мягким.
+    </div>
+  </div>
+  <div class="card">
+    <div class="lbl">История · ${st.count}</div>
+    ${R.length?R.map(r=>{
+      const d=fromISO(r.date);
+      const a=r.rpe?RPE.find(x=>x.v===r.rpe):null;
+      return `<div class="rn">
+        <div class="dt"><b>${d.getDate()}</b><small>${MON[d.getMonth()]}</small></div>
+        <div class="m"><b>${km(r.min||0)} мин</b> <span style="color:var(--mut);font-size:13px">${km(r.dist)} км${r.min?' · '+pace(r.min,r.dist)+' /км':''}</span>
+          <small>${r.kind?(r.kind==='int'?'интервалы':'непрерывный бег'):'загружено из файла'}${a?' · '+a.t.toLowerCase():''}</small></div>
+        <button class="x" onclick="askRpe('${r.id}')">${r.rpe?'⋯':'?'}</button>
+      </div>`}).join('')
+      :'<div class="empty">Ещё ничего нет. Загрузи файл после первой пробежки.</div>'}
+  </div><div style="height:20px"></div>`;
 }
 
 /* ---------- ПРОГРЕСС ---------- */
-function vStats(plan,st){
-  const wk=plan.weeks.filter(w=>w.state!=='future').slice(-14);
-  const fut=plan.weeks.filter(w=>w.state==='future').slice(0,4);
-  const bars=[...wk,...fut];
-  return `<div class="top"><div><h1>Прогресс</h1><div class="sub">${st.count} ${plural(st.count,'пробежка','пробежки','пробежек')} · ${km(st.total)} км</div></div></div>
+function vStats(P,st){
+  return `<div class="top"><div><h1>Прогресс</h1><div class="sub">${st.count} ${plural(st.count,'занятие','занятия','занятий')} · ${km(st.total)} км</div></div></div>
   <div class="grid">
-    <div class="st"><div class="v">${km(st.longest)}</div><div class="k">макс. за раз</div></div>
-    <div class="st"><div class="v">${km(st.weekMax)}</div><div class="k">макс. неделя</div></div>
+    <div class="st"><div class="v">${km(st.longestMin)}</div><div class="k">макс. мин за раз</div></div>
+    <div class="st"><div class="v">${km(st.longest)}</div><div class="k">макс. км за раз</div></div>
     <div class="st"><div class="v">${st.gain>0?'−'+Math.round(st.gain)+'с':'—'}</div><div class="k">темп /км</div></div>
   </div>
-  <div class="card"><div class="lbl">Объём по неделям</div>${barChart(bars)}
-    <div class="legend"><span><i style="background:var(--acc)"></i>факт</span><span><i style="background:var(--line)"></i>план</span></div>
+  ${indexCard()}
+  <div class="card"><div class="lbl">Минуты бега по занятиям</div>${runBars(st.R)}
+    <div class="legend"><span><i style="background:var(--acc)"></i>интервалы</span><span><i style="background:var(--blue)"></i>непрерывный</span><span><i style="background:var(--line)"></i>без пометки</span></div>
   </div>
   <div class="card"><div class="lbl">Темп</div>${paceChart(st.R)}</div>
-  <div class="card"><div class="lbl">Последние пробежки</div>
-    ${st.R.length?st.R.slice().reverse().slice(0,25).map(r=>{
-      const d=fromISO(r.date);
-      return `<div class="rn">
-        <div class="dt"><b>${d.getDate()}</b><small>${MON[d.getMonth()]}</small></div>
-        <div class="m"><b>${km(r.dist)} км</b><small>${DOW[dow(d)]}${r.min?' · '+pace(r.min,r.dist)+' /км · '+Math.round(r.min)+' мин':''}${r.src==='strava'?' · Strava':''}</small></div>
-        <button class="x" onclick="delRun('${r.id}')">✕</button></div>`}).join('')
-      :'<div class="empty">Пока пусто. Отметь пробежку или загрузи выгрузку из Strava.</div>'}
-  </div><div style="height:20px"></div>`;
+  <div style="height:20px"></div>`;
 }
-function barChart(ws){
-  if(!ws.length)return '<div class="empty">Нет данных</div>';
-  const W=520,H=170,pad=6,rp=30,n=ws.length;
-  const max=Math.max(10,...ws.map(w=>Math.max(w.planned,w.actual)))*1.12;
-  const bw=(W-pad-rp)/n;
+function indexCard(){
+  const I=runnerIndex();
+  const arrow=d=>d?(d.s==='up'?'<span style="color:var(--acc)">↑</span>':d.s==='down'?'<span style="color:var(--bad)">↓</span>':'<span style="color:var(--mut)">→</span>'):'';
+  const word=d=>d?`${arrow(d)} <span style="color:${d.s==='up'?'var(--acc)':d.s==='down'?'var(--bad)':'var(--mut)'}">${d.t}${d.v?', '+Math.round(d.v*100)+'%':''}</span>`:'<span style="color:var(--mut)">первое измерение</span>';
+  if(!I.score)return `<div class="card">
+    <div class="lbl">Индекс бегуна</div>
+    <div class="hint" style="margin-top:8px">Появится после первого занятия с непрерывным бегом: в интервальном средний темп размазан ходьбой, и считать по нему нечего.</div></div>`;
+  return `<div class="card">
+    <div class="lbl">Индекс бегуна</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:8px">
+      <div style="font-size:44px;font-weight:700;letter-spacing:-.04em;line-height:1">${I.score}</div>
+      <div style="flex:1">
+        <div style="font-weight:600">${vdotWord(I.cur.vdot)}</div>
+        <div style="font-size:13px">${word(I.vdotDir)}</div>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="wl"><span>Выносливость · ${km(Math.round(I.cur.endur))} мин подряд</span><b style="font-weight:500;font-size:13px">${word(I.endurDir)}</b></div>
+      <div class="wl"><span>Лёгкий темп · ${I.cur.pace?pace(I.cur.pace,1)+' /км':'—'}</span><b style="font-weight:500;font-size:13px">${word(I.paceDir)}</b></div>
+    </div>
+    <div class="hint" style="margin-top:12px">Это оценка МПК по формулам Дэниелса и Гилберта: сколько кислорода тело способно переработать на килограмм веса в минуту. Считается по самому быстрому непрерывному бегу за 6 недель и сравнивается с предыдущими шестью. Число занижено, если ты не бежал ни разу в полную силу, — важна не величина, а куда она идёт.</div>
+  </div>`;
+}
+function runBars(R){
+  const D=R.slice(-20);
+  if(!D.length)return '<div class="empty">Нет данных</div>';
+  const W=520,H=170,l=6,r=30,n=D.length;
+  const max=Math.max(10,...D.map(x=>x.min||0))*1.12;
+  const bw=(W-l-r)/n;
   const y=v=>H-22-(v/max)*(H-40);
   return `<svg viewBox="0 0 ${W} ${H}" style="margin-top:10px">
-    ${[0,.5,1].map(f=>`<line x1="${pad}" x2="${W-rp+2}" y1="${y(max*f)}" y2="${y(max*f)}" stroke="var(--line)" stroke-width="1"/>`).join('')}
-    ${ws.map((w,i)=>{
-      const x=pad+i*bw, iw=Math.max(4,bw*.56), ox=x+(bw-iw)/2;
-      const ph=H-22-y(w.planned), ah=H-22-y(w.actual);
-      return `<rect x="${ox}" y="${y(w.planned)}" width="${iw}" height="${Math.max(1,ph)}" rx="3" fill="var(--line)"/>
-        ${w.actual>0?`<rect x="${ox}" y="${y(w.actual)}" width="${iw}" height="${Math.max(2,ah)}" rx="3" fill="${w.ratio>=.9?'var(--acc)':'var(--acc-dim)'}"/>`:''}
-        ${i%2===0||n<9?`<text x="${ox+iw/2}" y="${H-6}" fill="var(--mut)" font-size="10" text-anchor="middle">${w.i+1}</text>`:''}`;
+    ${[0,.5,1].map(f=>`<line x1="${l}" x2="${W-r+2}" y1="${y(max*f)}" y2="${y(max*f)}" stroke="var(--line)"/>`).join('')}
+    ${D.map((x,i)=>{
+      const bx=l+i*bw,iw=Math.max(4,bw*.58),ox=bx+(bw-iw)/2,v=x.min||0;
+      const col=x.kind==='int'?'var(--acc)':(x.kind==='cont'?'var(--blue)':'var(--line)');
+      return `<rect x="${ox}" y="${y(v)}" width="${iw}" height="${Math.max(2,H-22-y(v))}" rx="3" fill="${col}"/>`;
     }).join('')}
-    ${[.5,1].map(f=>`<text x="${W-rp+7}" y="${y(max*f)+3}" fill="var(--mut)" font-size="10" text-anchor="start">${Math.round(max*f)}</text>`).join('')}
+    ${[.5,1].map(f=>`<text x="${W-r+7}" y="${y(max*f)+3}" fill="var(--mut)" font-size="10">${Math.round(max*f)}</text>`).join('')}
+    <text x="${l}" y="${H-6}" fill="var(--mut)" font-size="10">${fmtDate(fromISO(D[0].date))}</text>
+    <text x="${W-r+2}" y="${H-6}" fill="var(--mut)" font-size="10" text-anchor="end">${fmtDate(fromISO(D[D.length-1].date))}</text>
   </svg>`;
 }
 function paceChart(R){
@@ -769,8 +694,23 @@ function routeInfo(total){
   const p=next?(total-from)/(next.abs-from):1;
   return {passed,next,last,p:Math.max(0,Math.min(1,p))};
 }
-function routeStrip(st){
+/* Через сколько занятий и дней будет следующая точка — по его же темпу и частоте */
+function routeEta(st,P){
   const R=routeInfo(st.total);
+  if(!R.next)return null;
+  const left=Math.max(0,R.next.abs-st.total);
+  const per=Math.max(.8,P.kmPer);
+  const ses=Math.max(1,Math.ceil(left/per));
+  const days=Math.max(1,Math.round(ses*P.cadence));
+  return {left,ses,days,when:addDays(today(),days)};
+}
+function etaText(e){
+  if(!e)return '';
+  return `Это примерно ${e.ses} ${plural(e.ses,'занятие','занятия','занятий')} и ${e.days} ${plural(e.days,'день','дня','дней')} — к ${fmtDate(e.when)}`;
+}
+function routeStrip(st,P){
+  const R=routeInfo(st.total);
+  const eta=P?routeEta(st,P):null;
   if(!R.next)return `<div class="card"><div class="lbl">Путь</div>
     <div style="margin-top:8px"><b>Весь маршрут пройден</b><div class="hint">${km(st.total)} км — весь Карельский перешеек по кругу.</div></div></div>`;
   return `<button class="card" style="display:block;width:100%;text-align:left" onclick="S.tab='route';save();render()">
@@ -785,12 +725,13 @@ function routeStrip(st){
       </div>
       <div style="font-size:22px">📍</div>
     </div>
-    ${R.last?`<div class="hint" style="margin-top:9px">Последняя отметка: ${R.last.c}, ${km(R.last.abs)} км</div>`:
+    ${eta?`<div class="hint" style="margin-top:9px">${etaText(eta)}.</div>`:R.last?`<div class="hint" style="margin-top:9px">Последняя отметка: ${R.last.c}, ${km(R.last.abs)} км</div>`:
       `<div class="hint" style="margin-top:9px">Старт — северная окраина города. Впереди ${ROUTE_TOTAL} км по Карельскому перешейку.</div>`}
   </button>`;
 }
-function vRoute(plan,st){
+function vRoute(P,st){
   const R=routeInfo(st.total);
+  const eta=routeEta(st,P);
   const A=awardState(st),got=A.filter(a=>a.got).length;
   const r=ROUTES[0];
   const locked=STOPS.length-R.passed.length-(R.next?1:0);
@@ -805,7 +746,7 @@ function vRoute(plan,st){
     <div style="margin-top:2px">
     ${R.passed.length?R.passed.map((s,i)=>stopRow(s,true,false,i<R.passed.length-1||!!R.next)).join(''):
       `<div class="hint" style="padding:6px 0 10px">Пока ни одного места. Первое — ${STOPS[0].c}, через ${km(STOPS[0].abs)} км.</div>`}
-    ${R.next?stopRow(R.next,false,true,locked>0,st.total):''}
+    ${R.next?stopRow(R.next,false,true,locked>0,st.total,eta):''}
     ${locked>0?`<div style="display:flex;gap:12px">
       <div style="width:12px;flex:none;display:flex;justify-content:center">
         <div style="width:11px;height:11px;border-radius:50%;margin-top:4px;background:var(--line)"></div></div>
@@ -819,7 +760,7 @@ function vRoute(plan,st){
   ${vAwardGrid(A)}<div style="height:20px"></div>`;
 }
 /* строка места: пройденное с фактом, ближайшее — только именем */
-function stopRow(s,done,isNext,line,total){
+function stopRow(s,done,isNext,line,total,eta){
   return `<div style="display:flex;gap:12px">
     <div style="width:12px;flex:none;display:flex;flex-direction:column;align-items:center">
       <div style="width:11px;height:11px;border-radius:50%;margin-top:4px;flex:none;
@@ -832,7 +773,8 @@ function stopRow(s,done,isNext,line,total){
         <span style="font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;flex:none">${km(s.abs)} км</span>
       </div>
       ${done?`<div class="hint" style="margin-top:5px">${s.f}</div>`
-            :`<div class="hint" style="margin-top:5px;color:var(--acc)">Ещё ${km(s.abs-total)} км — и место откроется.</div>`}
+            :`<div class="hint" style="margin-top:5px;color:var(--acc)">Ещё ${km(s.abs-total)} км — и место откроется.</div>
+               ${eta?`<div class="hint" style="margin-top:3px">${etaText(eta)}, если бегать как сейчас.</div>`:''}`}
     </div></div>`;
 }
 
@@ -868,14 +810,13 @@ function checkNew(st){
 }
 
 /* ---------- ЕЩЁ ---------- */
-function vMore(plan,st){
-  const P=S.profile;
+function vMore(P,st){
   return `<div class="top"><div><h1>Ещё</h1><div class="sub">Данные и настройки</div></div></div>
   <div class="card">
     <div class="lbl">Данные</div>
     <div style="margin-top:10px">
       <button class="btn sec sm" style="margin-bottom:8px" onclick="importSheet()">Загрузить файл пробежек</button>
-      <button class="btn sec sm" style="margin-bottom:8px" onclick="addRun(5)">Добавить пробежку вручную</button>
+      <button class="btn sec sm" style="margin-bottom:8px" onclick="addRun(${P.next.dist})">Добавить пробежку вручную</button>
       <div class="row">
         <button class="btn gh sm" onclick="exportJSON()">Выгрузить</button>
         <button class="btn gh sm" onclick="importJSON()">Загрузить</button>
@@ -888,25 +829,30 @@ function vMore(plan,st){
     <button class="btn sec sm" style="margin-top:12px" onclick="syncSheet()">${syncOn()?'Настроить':'Подключить гист'}</button>
   </div>
   <div class="card">
-    <div class="lbl">Программа</div>
+    <div class="lbl">Сейчас</div>
     <div style="margin-top:10px;font-size:14px;line-height:1.7;color:var(--mut)">
-      Дней в неделю: <b style="color:var(--tx)">${P.days}</b> (минимум)<br>
-      Куда идём: <b style="color:var(--tx)">${plan.goal.name}</b><br>
-      Старт: <b style="color:var(--tx)">${fmtDate(plan.start)}</b><br>
-      Недельный объём сейчас: <b style="color:var(--tx)">${km(plan.weeks[Math.min(plan.nowWk,plan.weeks.length-1)].planned)} км</b>
+      Уровень: <b style="color:var(--tx)">${km(P.L)} мин бега</b> за занятие<br>
+      Следующее: <b style="color:var(--tx)">${P.next.title.toLowerCase()}</b><br>
+      Бегаешь примерно раз в <b style="color:var(--tx)">${km(P.cadence)} ${plural(Math.round(P.cadence),'день','дня','дней')}</b><br>
+      За занятие выходит <b style="color:var(--tx)">${km(P.kmPer)} км</b>
     </div>
-    <button class="btn sec sm" style="margin-top:12px" onclick="editPlan()">Изменить</button>
+    <button class="btn gh sm" style="margin-top:12px" onclick="resetLevel()">Сбросить уровень к началу</button>
   </div>
   <div class="card">
     <div class="lbl">Как это работает</div>
-    <div class="hint" style="margin-top:8px">
-      План пересчитывается заново из твоих пробежек — ничего не «сгорает». Закрыл неделю на 90% и больше — объём следующей растёт на 7%. Недобрал — объём стоит на месте. Пропустил почти всё — план сам сдвигается вниз, чтобы ты вернулся мягко. Каждая 4-я неделя разгрузочная. Потолок — ${plan.goal.peak} км в неделю.
+    <div class="hint" style="margin-top:8px;line-height:1.65">
+      Расписания нет: ни недель, ни дней. Есть одно следующее занятие, и оно собирается заново каждый раз, когда ты загружаешь пробежку и отвечаешь, как она далась.
+      Типы чередуются — интервалы, потом непрерывный бег. Пропустил неделю, две, месяц — ничего не сгорело, уровень просто мягко откатится.
     </div>
   </div>
   <div class="card">
     <div class="lbl">Сброс</div>
     <button class="btn gh sm" style="margin-top:10px;color:var(--bad);border-color:#3A2622" onclick="wipe()">Стереть всё</button>
   </div><div style="height:20px"></div>`;
+}
+function resetLevel(){
+  if(!confirm('Убрать ответы о самочувствии? Пробежки останутся, уровень начнётся заново.'))return;
+  S.runs.forEach(r=>{delete r.rpe});save();render();toast('Уровень сброшен');
 }
 
 /* ==================== действия ==================== */
@@ -918,8 +864,8 @@ function addRun(def){
   openSheet(`<h2>Пробежка</h2>
     <div style="height:14px"></div>
     <div class="f"><label>Дата</label><input type="date" id="rD" value="${iso(today())}"></div>
-    <div class="f"><label>Дистанция, км</label><input type="number" inputmode="decimal" step="0.1" id="rK" value="${def||5}"></div>
-    <div class="f"><label>Время, мин (необязательно)</label><input type="number" inputmode="numeric" id="rM" placeholder="например 32"></div>
+    <div class="f"><label>Время бега, мин</label><input type="number" inputmode="numeric" id="rM" value="${Math.round(plan().next.runMin)}"></div>
+    <div class="f"><label>Дистанция, км</label><input type="number" inputmode="decimal" step="0.1" id="rK" value="${def||3}"></div>
     <button class="btn" onclick="saveRun()">Сохранить</button>
     <div style="height:10px"></div><button class="btn gh sm" onclick="closeSheet()">Отмена</button>`);
   setTimeout(()=>document.getElementById('rK').select(),120);
@@ -927,84 +873,171 @@ function addRun(def){
 function saveRun(){
   const d=document.getElementById('rD').value,k=parseFloat(String(document.getElementById('rK').value).replace(',','.')),m=parseFloat(document.getElementById('rM').value);
   if(!d||!k||k<=0){toast('Укажи дату и километры');return}
-  S.runs.push({id:'r'+Date.now()+Math.random().toString(36).slice(2,6),date:d,dist:Math.round(k*100)/100,min:m>0?m:0,h:new Date().getHours(),src:'manual'});
-  save();closeSheet();render();toast('Записано: '+km(k)+' км');
+  const id='r'+Date.now()+Math.random().toString(36).slice(2,6);
+  S.runs.push({id,date:d,dist:Math.round(k*100)/100,min:m>0?m:0,h:new Date().getHours(),src:'manual',kind:plan().kind});
+  save();closeSheet();render();setTimeout(()=>askRpe(id),250);
 }
 function delRun(id){S.runs=S.runs.filter(r=>r.id!==id);save();render()}
 
-function editPlan(){
-  const P=S.profile;
-  openSheet(`<h2>Программа</h2>
-    <div class="hint" style="margin-top:8px">Всё уже настроено по умолчанию. Трогать не обязательно.</div>
-    <div style="height:14px"></div>
-    <div class="f"><label>Дней в неделю</label><select id="eD">${[1,2,3,4,5].map(d=>`<option ${P.days===d?'selected':''}>${d}</option>`).join('')}</select>
-      <div class="hint" style="margin-top:6px">Это нижняя планка. Пробежал лишний раз — засчитается сверх плана.</div></div>
-    <div class="f"><label>Куда идём</label><select id="eG">${Object.entries(GOALS).map(([k,g])=>`<option value="${k}" ${P.goal===k?'selected':''}>${g.name} — ${g.tag}</option>`).join('')}</select></div>
-    <div class="f"><label>Стартовый недельный объём, км</label><input type="number" inputmode="decimal" id="eB" value="${P.base}">
-      <div class="hint" style="margin-top:6px">Подстраивается сам при загрузке файла.</div></div>
-    <div class="f"><label>Режим</label>
-      <div class="seg"><button id="eW0" class="${P.walk?'':'on'}" onclick="pickWalk(0)">Обычный бег</button>
-        <button id="eW1" class="${P.walk?'on':''}" onclick="pickWalk(1)">Бег-ходьба</button></div>
-      <div class="hint" style="margin-top:6px">Бег-ходьба: первые 6 недель подходами по 2 минуты трусцой и 2 минуты шагом.</div></div>
-    <div class="f"><label>Дата старта</label><input type="date" id="eS" value="${P.start}"></div>
-    <button class="btn" onclick="savePlan()">Сохранить</button>
-    <div class="hint" style="margin-top:12px">Пробежки не потеряются — план просто пересчитается.</div>`);
+/* ---------- как далось ---------- */
+function askRpe(id){
+  const r=S.runs.find(x=>x.id===id);
+  if(!r)return;
+  openSheet(`<h2>Как далась пробежка?</h2>
+    <div class="hint" style="margin-top:8px">${fmtDate(fromISO(r.date))} · ${km(r.dist)} км${r.min?' за '+km(r.min)+' мин':''}. Это единственное, что решает, каким будет следующее занятие.</div>
+    <div style="margin-top:14px">
+      ${RPE.map(x=>`<button class="btn ${r.rpe===x.v?'':'sec'}" style="margin-bottom:8px;text-align:left;display:block" onclick="setRpe('${id}',${x.v})">
+        <div>${x.t}</div><div style="font-weight:500;opacity:.6;font-size:13px;margin-top:2px">${x.d}</div></button>`).join('')}
+    </div>
+    ${r.kind?'':`<div class="hint">Занятие загружено из файла — приложение не знает, интервалы это были или непрерывный бег. Отметь, если хочешь:</div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn gh sm" onclick="setKind('${id}','int')">Интервалы</button>
+        <button class="btn gh sm" onclick="setKind('${id}','cont')">Непрерывно</button>
+      </div>`}
+    <div style="height:10px"></div><button class="btn gh sm" onclick="closeSheet()">Потом</button>`);
 }
-let walkPick=null;
-function pickWalk(v){walkPick=v;document.getElementById('eW0').className=v?'':'on';document.getElementById('eW1').className=v?'on':''}
-function savePlan(){
-  S.profile={goal:document.getElementById('eG').value,days:+document.getElementById('eD').value,
-    base:Math.max(4,parseFloat(String(document.getElementById('eB').value).replace(',','.'))||6),
-    walk:walkPick!=null?!!walkPick:!!S.profile.walk,
-    start:iso(monday(fromISO(document.getElementById('eS').value)))};
-  walkPick=null;save();closeSheet();render();toast('План пересчитан');
+function setRpe(id,v){
+  const r=S.runs.find(x=>x.id===id);if(!r)return;
+  r.rpe=v;if(!r.kind)r.kind=pendingKind||'int';
+  pendingKind=null;save();closeSheet();render();
+  if(syncOn())syncPush(true);
+  toast('Следующее занятие: '+mins(plan().next.runMin)+' бега');
 }
+function setKind(id,k){const r=S.runs.find(x=>x.id===id);if(r){r.kind=k;save();askRpe(id)}}
+let pendingKind=null;
 
 /* ---------- импорт файлов ---------- */
 function importSheet(){
-  openSheet(`<h2>Загрузить пробежки</h2>
-    <div class="hint" style="margin-top:10px">Выбирай <b>TCX</b> — по файлу на тренировку. Можно отметить сразу несколько, хоть все накопившиеся.</div>
-    <input type="file" id="csvF" accept=".tcx,.gpx,.csv,.xml,text/xml,text/csv" multiple style="display:none" onchange="readFiles(this)">
+  openSheet(`<h2>Загрузить пробежку</h2>
+    <div class="hint" style="margin-top:10px">Бери любой файл, который отдало приложение часов, — фильтра нет, в «Файлах» доступно всё. Понимает TCX, GPX, CSV, JSON и архивы zip: внутрь архива приложение залезет само.</div>
+    <input type="file" id="csvF" multiple style="display:none" onchange="readFiles(this)">
     <button class="btn" style="margin-top:14px" onclick="document.getElementById('csvF').click()">Выбрать файлы</button>
-    <div class="hint" style="margin-top:10px">Из файла берутся дата, дистанция и время. Велосипед, плавание и ходьба отсеиваются. Один и тот же файл можно грузить повторно — дубли не задваиваются.<br><br>Понимает также GPX и общий <b>activities.csv</b> из архива Strava.</div>
+    <div class="hint" style="margin-top:10px">Берутся дата, дистанция и время. Велосипед, плавание и ходьба отсеиваются. Один и тот же файл можно грузить повторно — дубли не задваиваются.</div>
     <div style="height:14px"></div>
-    <button class="btn gh sm" onclick="demo()">Заполнить примером (12 недель)</button>`);
+    <button class="btn gh sm" onclick="demo()">Заполнить примером</button>`);
 }
 function readFiles(inp){
   const fs=[...inp.files];if(!fs.length)return;
-  let done=0,add=0,skip=0,bad=0;
-  fs.forEach(f=>{
-    const r=new FileReader();
-    const fin=()=>{if(++done===fs.length)finishImport(add,skip,bad)};
-    r.onload=()=>{const res=ingest(String(r.result));add+=res.add;skip+=res.skip;if(res.bad)bad++;fin()};
-    r.onerror=()=>{bad++;fin()};
-    r.readAsText(f,'utf-8');
-  });
+  toast('Разбираю…');
+  Promise.all(fs.map(f=>f.arrayBuffer().then(buf=>ingestBuf(buf,f.name)).catch(()=>({add:0,skip:0,bad:1}))))
+    .then(res=>{
+      const t=res.reduce((a,x)=>({add:a.add+x.add,skip:a.skip+x.skip,bad:a.bad+x.bad}),{add:0,skip:0,bad:0});
+      finishImport(t.add,t.skip,t.bad);
+    });
+}
+/* Формат определяем по содержимому, а не по расширению: имена бывают любые. */
+async function ingestBuf(buf,name){
+  const u=new Uint8Array(buf);
+  if(u.length<8)return {add:0,skip:0,bad:1};
+  if(u[0]===0x50&&u[1]===0x4B)return unzipAll(u);            // PK — архив
+  const text=new TextDecoder('utf-8').decode(u);
+  return ingest(text);
 }
 function ingest(text){
-  if(!text||text.length<20)return {add:0,skip:0,bad:1};
-  return /^\s*</.test(text)?parseXML(text):parseCSV(text);
+  const head=text.slice(0,400).replace(/^﻿/,'').trimStart();
+  if(!head)return {add:0,skip:0,bad:1};
+  if(head[0]==='<')return parseXML(text);
+  if(head[0]==='{'||head[0]==='[')return parseJSON(text);
+  return parseCSV(text);
 }
+/* Минимальный разбор zip: центральный каталог плюс распаковка через DecompressionStream. */
+async function unzipAll(u){
+  const dv=new DataView(u.buffer,u.byteOffset,u.byteLength);
+  let end=-1;
+  for(let i=u.length-22;i>=0&&i>u.length-70000;i--){if(dv.getUint32(i,true)===0x06054b50){end=i;break}}
+  if(end<0)return {add:0,skip:0,bad:1};
+  const n=dv.getUint16(end+10,true);let off=dv.getUint32(end+16,true);
+  const total={add:0,skip:0,bad:0};
+  for(let k=0;k<n;k++){
+    if(dv.getUint32(off,true)!==0x02014b50)break;
+    const method=dv.getUint16(off+10,true);
+    const csize=dv.getUint32(off+20,true);
+    const nameLen=dv.getUint16(off+28,true),extraLen=dv.getUint16(off+30,true),cmtLen=dv.getUint16(off+32,true);
+    const lho=dv.getUint32(off+42,true);
+    const fname=new TextDecoder().decode(u.subarray(off+46,off+46+nameLen));
+    off+=46+nameLen+extraLen+cmtLen;
+    if(/\/$/.test(fname)||csize===0)continue;
+    const lNameLen=dv.getUint16(lho+26,true),lExtra=dv.getUint16(lho+28,true);
+    const start=lho+30+lNameLen+lExtra;
+    const raw=u.subarray(start,start+csize);
+    try{
+      let data=raw;
+      if(method===8){
+        const ds=new DecompressionStream('deflate-raw');
+        data=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(ds)).arrayBuffer());
+      } else if(method!==0){continue}
+      const r=await ingestBuf(data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength),fname);
+      total.add+=r.add;total.skip+=r.skip;
+    }catch(e){/* один файл не разобрался — идём дальше */}
+  }
+  if(!total.add&&!total.skip)total.bad=1;
+  return total;
+}
+/* JSON произвольной формы: ищем в дереве объекты с датой, дистанцией и временем. */
+function parseJSON(text){
+  let j;try{j=JSON.parse(text)}catch(e){return {add:0,skip:0,bad:1}}
+  const found=[];
+  const key=(o,re)=>Object.keys(o).find(k=>re.test(k));
+  const walk=(v,depth)=>{
+    if(!v||typeof v!=='object'||depth>7)return;
+    if(Array.isArray(v)){v.forEach(x=>walk(x,depth+1));return}
+    const kD=key(v,/^(start_?time|date|start|begin|timestamp|time)$/i)||key(v,/date|time|start/i);
+    const kL=key(v,/^(distance|dist|total_?distance|km|meters?)$/i)||key(v,/dist/i);
+    const kT=key(v,/^(duration|moving_?time|elapsed_?time|total_?time|time_?spent|sport_?time)$/i)||key(v,/duration|elapsed|moving/i);
+    if(kD&&kL&&typeof v[kL]!=='object'){
+      const type=String(v.type||v.sport||v.category||v.activity||v.name||'Run');
+      if(!isNotRun(type))found.push({d:v[kD],dist:v[kL],dur:kT?v[kT]:0});
+    }
+    Object.values(v).forEach(x=>walk(x,depth+1));
+  };
+  walk(j,0);
+  let add=0,skip=0;
+  for(const f of found){
+    const D=jsonDate(f.d);if(!D)continue;
+    let dist=parseFloat(String(f.dist).replace(',','.'));
+    if(!(dist>0))continue;
+    if(dist>300)dist/=1000;                       // метры
+    let min=parseFloat(String(f.dur||0))||0;
+    if(min>600)min/=60;                            // секунды
+    if(pushRun(D.d,D.h,dist,min,'json'))add++;else skip++;
+  }
+  return {add,skip,bad:found.length?0:1};
+}
+function jsonDate(v){
+  if(typeof v==='number'){
+    const ms=v>1e12?v:v*1000;                      // секунды или миллисекунды
+    const d=new Date(ms);
+    return isNaN(+d)||d.getFullYear()<2000?null:{d,h:d.getHours()};
+  }
+  return parseDate(String(v));
+}
+
 function finishImport(add,skip,bad){
-  const cal=add?calibrate():0;
-  const lad=add?calibrateLadder():0;
+  if(add){
+    // самая свежая пробежка — это то занятие, которое приложение предлагало
+    const R=sortedRuns(),last=R[R.length-1];
+    if(last&&!last.kind)last.kind=pendingKind||nextKindBefore(last);
+  }
   save();closeSheet();render();
   if(add&&syncOn())syncPush(true);
-  if(add)toast(`Добавлено ${add} ${plural(add,'пробежка','пробежки','пробежек')}`
-    +(lad?` · старт со ступени ${lad}`:(cal?` · план подстроен под ${km(cal)} км`:'')));
-  else if(skip)toast('Всё это уже загружено');
-  else toast(bad?'Файл не разобрался':'Пробежек в файле не нашлось');
+  if(!add){toast(skip?'Всё это уже загружено':(bad?'Файл не разобрался':'Пробежек в файле не нашлось'));return}
+  const R=sortedRuns(),last=R[R.length-1];
+  toast(`Добавлено ${add} ${plural(add,'пробежка','пробежки','пробежек')}`);
+  if(last&&!last.rpe)setTimeout(()=>askRpe(last.id),450);
+}
+/* каким должен был быть тип занятия перед этой пробежкой */
+function nextKindBefore(r){
+  const prev=sortedRuns().filter(x=>x.kind&&x.id!==r.id).slice(-1)[0];
+  return prev&&prev.kind==='int'?'cont':'int';
 }
 /* общая точка добавления: дубли режутся по паре «дата + дистанция» */
 function pushRun(d,h,dist,min,src){
   dist=Math.round(dist*100)/100;
   if(!(dist>0))return false;
   const key=iso(d)+'|'+Math.round(dist*10);
-  if(pushRun.have===undefined||pushRun.stamp!==S.runs.length)pushRun.have=new Set(S.runs.map(r=>r.date+'|'+Math.round(r.dist*10)));
-  if(pushRun.have.has(key))return false;
-  pushRun.have.add(key);
-  S.runs.push({id:'i'+S.runs.length+Date.now().toString(36),date:iso(d),dist,min:Math.round(min*10)/10,h,src});
-  pushRun.stamp=S.runs.length;
+  if(S.runs.some(r=>r.date+'|'+Math.round(r.dist*10)===key))return false;
+  S.runs.push({id:'i'+S.runs.length+Date.now().toString(36),date:iso(d),dist,
+    min:Math.round((min||0)*10)/10,h,src});
   return true;
 }
 
@@ -1120,40 +1153,6 @@ function parseCSV(text){
   return {add,skip,bad:0};
 }
 
-/* Стартовый объём подтягивается под реальные данные: средняя из недель с бегом
-   за последние два месяца. Так план не приходится настраивать руками. */
-function calibrate(){
-  const start=monday(today()),by={};
-  for(const r of S.runs){
-    const w=monday(fromISO(r.date));
-    const age=Math.round(daysBetween(w,start)/7);
-    if(age>=0&&age<8)by[age]=(by[age]||0)+r.dist;
-  }
-  const v=Object.values(by).filter(x=>x>1);
-  if(v.length<2)return 0;
-  v.sort((a,b)=>a-b);
-  const mid=v.length%2?v[(v.length-1)/2]:(v[v.length/2-1]+v[v.length/2])/2;
-  const base=Math.max(6,Math.min(45,Math.round(mid*2)/2));
-  const changed=Math.abs(base-S.profile.base)>=1;
-  if(changed)S.profile.base=base;
-  return changed?base:0;
-}
-
-/* Подсказка, с какой ступени лестницы стартовать.
-   Считаем консервативно: непрерывно бежать человек может заметно меньше,
-   чем длится вся его тренировка, поэтому берём 60% от медианного времени. */
-function calibrateLadder(){
-  const R=S.runs.filter(r=>fromISO(r.date)>=addDays(today(),-56)&&r.min>0);
-  if(R.length<4)return 0;
-  const m=R.map(r=>r.min).sort((a,b)=>a-b);
-  const med=m[Math.floor(m.length/2)]*0.6;
-  let skip=0;
-  LADDER.forEach((segs,i)=>{if(runMin(segs)<=med)skip=i+1});
-  if(skip<=(S.profile.skip||0))return 0;
-  S.profile.skip=skip;
-  return skip;
-}
-
 
 /* ==================== синхронизация через gist ====================
    Секрет живёт только в этом браузере, в репозитории его нет.
@@ -1249,20 +1248,18 @@ function wipe(){if(confirm('Стереть план и все пробежки?'
 
 /* ---------- демо ---------- */
 function demo(){
-  const st=monday(addDays(today(),-11*7));
-  S.profile={goal:'habit',days:2,base:10,walk:false,start:iso(st)};
-  S.runs=[];let vol=14;
-  for(let w=0;w<11;w++){
-    const dl=(w%4===3),v=dl?vol*.78:vol;
-    const days=[1,3,6],parts=[v*.3,v*.28,v*.42];
-    days.forEach((d,j)=>{
-      if(Math.random()<(w>7?.16:.08))return;
-      const dist=Math.round(parts[j]*(.9+Math.random()*.2)*10)/10;
-      const p=6.6-w*0.045+Math.random()*.35;
-      const dt=addDays(st,w*7+d);
-      S.runs.push({id:'d'+w+j,date:iso(dt),dist,min:Math.round(dist*p*10)/10,h:[7,19,10][j],src:'strava'});
-    });
-    if(!dl)vol*=1.07;
+  S.runs=[];
+  let L=8,kind='int',d=addDays(today(),-70);
+  for(let i=0;i<18;i++){
+    const p=7.6-i*0.06+Math.random()*.25;                 // темп понемногу улучшается
+    const ses=buildSession(L,kind,p);
+    const min=Math.round((ses.runMin+restMin(ses.t))*10)/10;   // часы считают и отдых
+    const dist=Math.round((ses.runMin/p+restMin(ses.t)/WALK_PACE)*10)/10;
+    const rpe=[1,2,2,3][Math.floor(Math.random()*4)];
+    S.runs.push({id:'d'+i,date:iso(d),dist,min,h:[7,19,10][i%3],src:'demo',kind,rpe});
+    L=Math.max(6,Math.min(90,L*RPEK(rpe)));
+    kind=kind==='int'?'cont':'int';
+    d=addDays(d,3+Math.round(Math.random()));
   }
   S.seen=[];save();closeSheet();render();toast('Пример загружен');
 }
