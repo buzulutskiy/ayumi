@@ -1228,29 +1228,80 @@ function syncAge(){
   const d=Math.round(h/24);
   return `${d} ${plural(d,'день','дня','дней')} назад`;
 }
+/* Подключение: от человека нужен только токен. Гист приложение найдёт само
+   среди его гистов, а если такого нет — создаст. Номер вводить не нужно. */
 function syncSheet(){
   const c=syncCfg();
   openSheet(`<h2>Синхронизация</h2>
-    <div class="hint" style="margin-top:8px">На iPhone у приложения с рабочего стола своё хранилище, отдельное от Safari: что загрузил в браузере, в приложении не появится. Общее облако решает это — и заодно данные не пропадут при переустановке.</div>
+    <div class="hint" style="margin-top:8px">На iPhone у приложения с рабочего стола своё хранилище, отдельное от Safari: что загрузил в браузере, здесь не появится. Общее облако это чинит — и заодно данные не пропадут при переустановке.</div>
     <ol class="ol">
-      <li>Токен: github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token, отметить только область <b>gist</b>.</li>
-      <li>Вставить сюда токен и номер гиста. <b>Сделать это нужно в каждом месте, откуда открываешь приложение</b> — и в Safari, и в приложении с рабочего стола.</li>
+      <li>Открой <b>github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</b> → Generate new token (classic).</li>
+      <li>Отметь единственную галочку <b>gist</b>. Именно classic: у fine-grained токенов доступа к гистам нет.</li>
+      <li>Скопируй токен и вставь сюда. Дальше приложение всё сделает само.</li>
     </ol>
-    <div class="f"><label>Номер гиста</label><input type="text" id="syG" value="${c.gist||''}" placeholder="32 символа из адреса гиста" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
-    <div class="f"><label>Токен</label><input type="password" id="syT" value="${c.token||''}" placeholder="ghp_…" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
-    <button class="btn" onclick="syncSaveFields()">Сохранить и забрать данные</button>
-    <div style="height:8px"></div>
-    <div class="row">
-      <button class="btn sec sm" onclick="syncPush()">Отправить сейчас</button>
-      <button class="btn sec sm" onclick="syncPull()">Забрать сейчас</button>
+    <div class="f"><label>Токен GitHub</label>
+      <input type="text" id="syT" value="${c.token||''}" placeholder="ghp_…" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button class="btn gh sm" style="margin-top:8px" onclick="pasteToken()">Вставить из буфера обмена</button>
     </div>
-    ${c.gist?`<div class="hint" style="margin-top:12px">Последний обмен: ${syncAge()}.</div>
-      <button class="btn gh sm" style="margin-top:8px" onclick="syncForget()">Отключить</button>`:''}`);
+    <div id="syMsg" class="hint" style="margin-bottom:12px">${c.gist?`Подключено. Гист <b>${c.gist.slice(0,8)}…</b>, последний обмен: ${syncAge()}.`:''}</div>
+    <button class="btn" onclick="syncConnect()">Подключить</button>
+    ${c.gist?`<div style="height:8px"></div>
+      <div class="row">
+        <button class="btn sec sm" onclick="syncPush()">Отправить сейчас</button>
+        <button class="btn sec sm" onclick="syncPull()">Забрать сейчас</button>
+      </div>
+      <button class="btn gh sm" style="margin-top:8px" onclick="syncForget()">Отключить</button>`:''}
+    <div class="hint" style="margin-top:12px">Токен остаётся только в этом браузере. В коде приложения его нет и быть не может — страница публичная.</div>`);
 }
-function syncSaveFields(){
-  const g=document.getElementById('syG').value.trim().replace(/^.*\//,'');
-  syncSave({gist:g,token:document.getElementById('syT').value.trim()});
-  closeSheet();syncPull();
+function syMsg(t,bad){
+  const el=document.getElementById('syMsg');
+  if(el){el.innerHTML=t;el.style.color=bad?'var(--bad)':'var(--mut)'}
+}
+async function pasteToken(){
+  try{
+    const t=await navigator.clipboard.readText();
+    if(!t||!t.trim())return syMsg('В буфере пусто',true);
+    document.getElementById('syT').value=t.trim();
+    syMsg('Вставил. Теперь «Подключить».');
+  }catch(e){syMsg('Браузер не дал прочитать буфер — вставь длинным нажатием в поле',true)}
+}
+async function syncConnect(){
+  const token=(document.getElementById('syT').value||'').trim();
+  if(!token)return syMsg('Сначала вставь токен',true);
+  syMsg('Проверяю…');
+  try{
+    // 1. кто мы и есть ли вообще доступ
+    const me=await fetch('https://api.github.com/user',{headers:{Authorization:'Bearer '+token}});
+    if(me.status===401)return syMsg('Токен не подошёл. Проверь, что он скопирован целиком и это token (classic).',true);
+    if(!me.ok)return syMsg('GitHub ответил '+me.status,true);
+    // 2. ищем свой гист среди уже существующих
+    syMsg('Ищу гист…');
+    let gist=null;
+    for(let page=1;page<=3&&!gist;page++){
+      const r=await fetch('https://api.github.com/gists?per_page=100&page='+page,{headers:{Authorization:'Bearer '+token}});
+      if(r.status===403||r.status===404)return syMsg('У токена нет области gist. Создай новый и отметь галочку gist.',true);
+      if(!r.ok)return syMsg('GitHub ответил '+r.status,true);
+      const list=await r.json();
+      if(!list.length)break;
+      gist=list.find(g=>g.files&&g.files['razbeg.json']);
+    }
+    // 3. нет — заводим новый, приватный
+    if(!gist){
+      syMsg('Гиста нет, создаю…');
+      const r=await fetch('https://api.github.com/gists',{
+        method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'},
+        body:JSON.stringify({description:'Разбег — данные пробежек',public:false,
+          files:{'razbeg.json':{content:JSON.stringify({runs:[],seen:[],updated:0},null,1)}}})});
+      if(!r.ok)return syMsg('Не смог создать гист: GitHub ответил '+r.status,true);
+      gist=await r.json();
+    }
+    syncSave({gist:gist.id,token});
+    syMsg('Готово, забираю данные…');
+    await syncPull(true);
+    await syncPush(true);
+    closeSheet();render();
+    toast('Синхронизация подключена');
+  }catch(e){syMsg('Не получилось: '+e.message,true)}
 }
 function syncForget(){localStorage.removeItem(SKEY);closeSheet();render();toast('Синхронизация отключена')}
 
