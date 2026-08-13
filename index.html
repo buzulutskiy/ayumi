@@ -980,21 +980,54 @@ async function unzipAll(u){
   if(!total.add&&!total.skip)total.bad=1;
   return total;
 }
-/* JSON произвольной формы: ищем в дереве объекты с датой, дистанцией и временем. */
+/* JSON произвольной формы: ищем в дереве объекты с датой, дистанцией и временем.
+   Экспортёры вроде Health Auto Export пишут числа как {qty: 4.12, units: "km"},
+   поэтому величину и единицы разбираем отдельно. */
+function qty(v){
+  if(v==null)return null;
+  if(typeof v==='number')return {n:v,u:''};
+  if(typeof v==='string'){const n=parseFloat(v.replace(',','.'));return isNaN(n)?null:{n,u:v.replace(/[\d.,\s-]/g,'').toLowerCase()}}
+  if(typeof v==='object'){
+    const k=Object.keys(v).find(x=>/^(qty|value|amount|val)$/i.test(x));
+    if(k==null)return null;
+    const n=parseFloat(v[k]);
+    if(isNaN(n))return null;
+    const uk=Object.keys(v).find(x=>/^(unit|units)$/i.test(x));
+    return {n,u:uk?String(v[uk]).toLowerCase():''};
+  }
+  return null;
+}
+function toKm(q){
+  if(!q)return 0;
+  if(/^m$|meter|метр/.test(q.u))return q.n/1000;
+  if(/mi|mile|миля/.test(q.u))return q.n*1.609344;
+  if(/km|км/.test(q.u))return q.n;
+  return q.n>300?q.n/1000:q.n;          // единиц нет — решаем по величине
+}
+function toMin(q){
+  if(!q)return 0;
+  if(/^s$|sec|сек/.test(q.u))return q.n/60;
+  if(/^h$|hour|час/.test(q.u))return q.n*60;
+  if(/min|мин/.test(q.u))return q.n;
+  return q.n>600?q.n/60:q.n;
+}
 function parseJSON(text){
   let j;try{j=JSON.parse(text)}catch(e){return {add:0,skip:0,bad:1}}
   const found=[];
   const key=(o,re)=>Object.keys(o).find(k=>re.test(k));
   const walk=(v,depth)=>{
-    if(!v||typeof v!=='object'||depth>7)return;
+    if(!v||typeof v!=='object'||depth>8)return;
     if(Array.isArray(v)){v.forEach(x=>walk(x,depth+1));return}
-    const kD=key(v,/^(start_?time|date|start|begin|timestamp|time)$/i)||key(v,/date|time|start/i);
+    const kD=key(v,/^(start_?date|start_?time|date|start|begin|timestamp|time)$/i)||key(v,/date|time|start/i);
     const kL=key(v,/^(distance|dist|total_?distance|km|meters?)$/i)||key(v,/dist/i);
-    const kT=key(v,/^(duration|moving_?time|elapsed_?time|total_?time|time_?spent|sport_?time)$/i)||key(v,/duration|elapsed|moving/i);
-    if(kD&&kL&&typeof v[kL]!=='object'){
-      const type=String(v.type||v.sport||v.category||v.activity||v.name||'Run');
-      const kH=key(v,/^(avg_?hr|average_?heart_?rate|heart_?rate|hrm?_?avg)$/i)||key(v,/heart|pulse|пульс/i);
-      if(!isNotRun(type))found.push({d:v[kD],dist:v[kL],dur:kT?v[kT]:0,hr:kH?parseFloat(v[kH])||0:0});
+    const kT=key(v,/^(duration|moving_?time|elapsed_?time|total_?time|active_?time|sport_?time)$/i)||key(v,/duration|elapsed|moving/i);
+    const L=kL?qty(v[kL]):null;
+    if(kD&&L){
+      const type=String(v.type||v.sport||v.name||v.workoutActivityType||v.category||v.activity||'Run');
+      if(!isNotRun(type)){
+        const kH=key(v,/^(avg_?heart_?rate|average_?heart_?rate|heart_?rate|avg_?hr|hr_?avg)$/i)||key(v,/heart|pulse|пульс/i);
+        found.push({d:v[kD],dist:L,dur:kT?qty(v[kT]):null,hr:kH?qty(v[kH]):null});
+      }
     }
     Object.values(v).forEach(x=>walk(x,depth+1));
   };
@@ -1002,12 +1035,10 @@ function parseJSON(text){
   let add=0,skip=0;
   for(const f of found){
     const D=jsonDate(f.d);if(!D)continue;
-    let dist=parseFloat(String(f.dist).replace(',','.'));
+    const dist=toKm(f.dist);
     if(!(dist>0))continue;
-    if(dist>300)dist/=1000;                       // метры
-    let min=parseFloat(String(f.dur||0))||0;
-    if(min>600)min/=60;                            // секунды
-    if(pushRun(D.d,D.h,dist,min,'json',{hr:Math.round(f.hr)||0}))add++;else skip++;
+    const hr=f.hr?Math.round(f.hr.n):0;
+    if(pushRun(D.d,D.h,dist,toMin(f.dur),'json',{hr:hr>40&&hr<230?hr:0}))add++;else skip++;
   }
   return {add,skip,bad:found.length?0:1};
 }
