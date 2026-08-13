@@ -185,6 +185,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
   <button class="tb" data-tab="more"><i class="i">⚙️</i>Ещё</button>
 </div></nav>
 
+<input type="file" id="pickFile" multiple style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" onchange="readFiles(this)">
 <div class="sheet" id="sheet"><div class="bd" onclick="closeSheet()"></div><div class="pn" id="sheetBody"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -548,9 +549,13 @@ function vToday(P,st){
   <div class="top"><div><h1>${greet()}</h1><div class="sub">${DOW[dow(today())]}, ${fmtDate(today())}${P.gap!=null?' · '+(P.gap===0?'бежал сегодня':P.gap===1?'вчера бежал':`${P.gap} ${plural(P.gap,'день','дня','дней')} без бега`):''}</div></div>
     <span class="tag">занятие ${P.done+1}</span></div>
   ${P.pending?pendingCard(P):''}
+  ${(!syncOn()&&st.count>0)?`<button class="card" style="display:block;width:100%;text-align:left;border-color:#3A3322;background:linear-gradient(150deg,rgba(255,176,32,.08),var(--card))" onclick="syncSheet()">
+    <div class="lbl" style="color:var(--warn)">Данные только здесь</div>
+    <div class="hint" style="margin-top:6px">У приложения с рабочего стола своё хранилище, отдельное от Safari — загруженное в браузере сюда не попадёт. Подключи облако, и данные будут везде одни.</div>
+  </button>`:''}
   ${head}
-  <button class="btn" onclick="importSheet()">Загрузить пробежку из файла</button>
-  <button class="btn gh sm" style="margin:8px 0 14px" onclick="addRun(${x.dist})">или отметить вручную</button>
+  <button class="btn" onclick="pickRuns()">Загрузить пробежку из файла</button>
+  <div class="hint" style="text-align:center;margin:8px 0 14px">Любой файл из приложения часов — tcx, gpx, csv, json или zip.</div>
   ${routeStrip(st,P)}
   <div class="grid">
     <div class="st"><div class="v">${km(P.L)}</div><div class="k">мин — твой уровень</div></div>
@@ -694,19 +699,33 @@ function routeInfo(total){
   const p=next?(total-from)/(next.abs-from):1;
   return {passed,next,last,p:Math.max(0,Math.min(1,p))};
 }
-/* Через сколько занятий и дней будет следующая точка — по его же темпу и частоте */
+/* Через сколько занятий и дней будет следующая точка.
+   Пока не набралось хотя бы трёх пробежек за неделю, считать не из чего:
+   ни средней длины пробежки, ни того, как часто он вообще бегает. */
 function routeEta(st,P){
   const R=routeInfo(st.total);
   if(!R.next)return null;
   const left=Math.max(0,R.next.abs-st.total);
+  const runs=sortedRuns();
+  const span=runs.length>1?daysBetween(fromISO(runs[0].date),fromISO(runs[runs.length-1].date)):0;
+  if(runs.length<3||span<7)return {left,ready:false,have:runs.length,span};
   const per=Math.max(.8,P.kmPer);
   const ses=Math.max(1,Math.ceil(left/per));
   const days=Math.max(1,Math.round(ses*P.cadence));
-  return {left,ses,days,when:addDays(today(),days)};
+  return {left,ready:true,ses,days,per,cadence:P.cadence,runs:runs.length,
+    rough:runs.length<8,when:addDays(today(),days)};
 }
 function etaText(e){
   if(!e)return '';
-  return `Это примерно ${e.ses} ${plural(e.ses,'занятие','занятия','занятий')} и ${e.days} ${plural(e.days,'день','дня','дней')} — к ${fmtDate(e.when)}`;
+  if(!e.ready)return e.have<3
+    ? `Срок появится, когда наберётся ${3-e.have} ${plural(3-e.have,'пробежка','пробежки','пробежек')}: пока не из чего считать, как часто ты бегаешь.`
+    : 'Срок появится, когда пройдёт первая полная неделя — тогда станет видно, с какой частотой ты бегаешь.';
+  return `${e.ses} ${plural(e.ses,'пробежка','пробежки','пробежек')} по ${km(e.per)} км — это около ${e.days} ${plural(e.days,'дня','дней','дней')}, к ${fmtDate(e.when)}`;
+}
+function etaBasis(e){
+  if(!e||!e.ready)return '';
+  return `Считаю по твоим ${km(e.per)} км за пробежку и ${km(e.cadence)} ${plural(Math.round(e.cadence),'дню','дням','дням')} между ними.`
+    +(e.rough?' Прогноз пока грубый — с каждой неделей будет точнее.':'');
 }
 function routeStrip(st,P){
   const R=routeInfo(st.total);
@@ -725,7 +744,7 @@ function routeStrip(st,P){
       </div>
       <div style="font-size:22px">📍</div>
     </div>
-    ${eta?`<div class="hint" style="margin-top:9px">${etaText(eta)}.</div>`:R.last?`<div class="hint" style="margin-top:9px">Последняя отметка: ${R.last.c}, ${km(R.last.abs)} км</div>`:
+    ${eta?`<div class="hint" style="margin-top:9px">${etaText(eta)}${eta.ready?'.':''}</div>`:R.last?`<div class="hint" style="margin-top:9px">Последняя отметка: ${R.last.c}, ${km(R.last.abs)} км</div>`:
       `<div class="hint" style="margin-top:9px">Старт — северная окраина города. Впереди ${ROUTE_TOTAL} км по Карельскому перешейку.</div>`}
   </button>`;
 }
@@ -774,7 +793,8 @@ function stopRow(s,done,isNext,line,total,eta){
       </div>
       ${done?`<div class="hint" style="margin-top:5px">${s.f}</div>`
             :`<div class="hint" style="margin-top:5px;color:var(--acc)">Ещё ${km(s.abs-total)} км — и место откроется.</div>
-               ${eta?`<div class="hint" style="margin-top:3px">${etaText(eta)}, если бегать как сейчас.</div>`:''}`}
+               ${eta?`<div class="hint" style="margin-top:3px">${etaText(eta)}${eta.ready?'.':''}</div>
+                 ${eta&&eta.ready?`<div class="hint" style="margin-top:3px;opacity:.75">${etaBasis(eta)}</div>`:''}`:''}`}
     </div></div>`;
 }
 
@@ -815,17 +835,19 @@ function vMore(P,st){
   <div class="card">
     <div class="lbl">Данные</div>
     <div style="margin-top:10px">
-      <button class="btn sec sm" style="margin-bottom:8px" onclick="importSheet()">Загрузить файл пробежек</button>
-      <button class="btn sec sm" style="margin-bottom:8px" onclick="addRun(${P.next.dist})">Добавить пробежку вручную</button>
+      <button class="btn sec sm" style="margin-bottom:8px" onclick="pickRuns()">Загрузить файлы пробежек</button>
       <div class="row">
         <button class="btn gh sm" onclick="exportJSON()">Выгрузить</button>
         <button class="btn gh sm" onclick="importJSON()">Загрузить</button>
       </div>
+      <button class="btn gh sm" style="margin-top:8px" onclick="demo()">Заполнить примером</button>
     </div>
   </div>
   <div class="card">
     <div class="lbl">Синхронизация</div>
-    <div class="hint" style="margin-top:8px">${syncOn()?'Подключена: данные уезжают в твой гист после каждой загрузки файлов.':'Не настроена — данные живут только в этом браузере.'}</div>
+    <div class="hint" style="margin-top:8px">${syncOn()
+      ?`Подключена. Забирается при каждом открытии, отправляется после любого изменения. Последний обмен: ${syncAge()}.`
+      :'Не настроена — данные живут только здесь. На iPhone у приложения с рабочего стола хранилище отдельное от Safari, так что без облака они не совпадут.'}</div>
     <button class="btn sec sm" style="margin-top:12px" onclick="syncSheet()">${syncOn()?'Настроить':'Подключить гист'}</button>
   </div>
   <div class="card">
@@ -852,7 +874,7 @@ function vMore(P,st){
 }
 function resetLevel(){
   if(!confirm('Убрать ответы о самочувствии? Пробежки останутся, уровень начнётся заново.'))return;
-  S.runs.forEach(r=>{delete r.rpe});save();render();toast('Уровень сброшен');
+  S.runs.forEach(r=>{delete r.rpe});touch();render();toast('Уровень сброшен');
 }
 
 /* ==================== действия ==================== */
@@ -860,24 +882,7 @@ function toast(t){const el=document.getElementById('toast');el.textContent=t;el.
 function openSheet(html){document.getElementById('sheetBody').innerHTML='<div class="grab"></div>'+html;document.getElementById('sheet').classList.add('on')}
 function closeSheet(){document.getElementById('sheet').classList.remove('on')}
 
-function addRun(def){
-  openSheet(`<h2>Пробежка</h2>
-    <div style="height:14px"></div>
-    <div class="f"><label>Дата</label><input type="date" id="rD" value="${iso(today())}"></div>
-    <div class="f"><label>Время бега, мин</label><input type="number" inputmode="numeric" id="rM" value="${Math.round(plan().next.runMin)}"></div>
-    <div class="f"><label>Дистанция, км</label><input type="number" inputmode="decimal" step="0.1" id="rK" value="${def||3}"></div>
-    <button class="btn" onclick="saveRun()">Сохранить</button>
-    <div style="height:10px"></div><button class="btn gh sm" onclick="closeSheet()">Отмена</button>`);
-  setTimeout(()=>document.getElementById('rK').select(),120);
-}
-function saveRun(){
-  const d=document.getElementById('rD').value,k=parseFloat(String(document.getElementById('rK').value).replace(',','.')),m=parseFloat(document.getElementById('rM').value);
-  if(!d||!k||k<=0){toast('Укажи дату и километры');return}
-  const id='r'+Date.now()+Math.random().toString(36).slice(2,6);
-  S.runs.push({id,date:d,dist:Math.round(k*100)/100,min:m>0?m:0,h:new Date().getHours(),src:'manual',kind:plan().kind});
-  save();closeSheet();render();setTimeout(()=>askRpe(id),250);
-}
-function delRun(id){S.runs=S.runs.filter(r=>r.id!==id);save();render()}
+function delRun(id){S.runs=S.runs.filter(r=>r.id!==id);touch();render()}
 
 /* ---------- как далось ---------- */
 function askRpe(id){
@@ -899,25 +904,18 @@ function askRpe(id){
 function setRpe(id,v){
   const r=S.runs.find(x=>x.id===id);if(!r)return;
   r.rpe=v;if(!r.kind)r.kind=pendingKind||'int';
-  pendingKind=null;save();closeSheet();render();
-  if(syncOn())syncPush(true);
+  pendingKind=null;touch();closeSheet();render();
   toast('Следующее занятие: '+mins(plan().next.runMin)+' бега');
 }
-function setKind(id,k){const r=S.runs.find(x=>x.id===id);if(r){r.kind=k;save();askRpe(id)}}
+function setKind(id,k){const r=S.runs.find(x=>x.id===id);if(r){r.kind=k;touch();askRpe(id)}}
 let pendingKind=null;
 
 /* ---------- импорт файлов ---------- */
-function importSheet(){
-  openSheet(`<h2>Загрузить пробежку</h2>
-    <div class="hint" style="margin-top:10px">Бери любой файл, который отдало приложение часов, — фильтра нет, в «Файлах» доступно всё. Понимает TCX, GPX, CSV, JSON и архивы zip: внутрь архива приложение залезет само.</div>
-    <input type="file" id="csvF" multiple style="display:none" onchange="readFiles(this)">
-    <button class="btn" style="margin-top:14px" onclick="document.getElementById('csvF').click()">Выбрать файлы</button>
-    <div class="hint" style="margin-top:10px">Берутся дата, дистанция и время. Велосипед, плавание и ходьба отсеиваются. Один и тот же файл можно грузить повторно — дубли не задваиваются.</div>
-    <div style="height:14px"></div>
-    <button class="btn gh sm" onclick="demo()">Заполнить примером</button>`);
-}
+/* Выбор файла открывается сразу: промежуточный экран тут лишний. */
+function pickRuns(){const i=document.getElementById('pickFile');i.value='';i.click()}
 function readFiles(inp){
   const fs=[...inp.files];if(!fs.length)return;
+  inp.value='';
   toast('Разбираю…');
   Promise.all(fs.map(f=>f.arrayBuffer().then(buf=>ingestBuf(buf,f.name)).catch(()=>({add:0,skip:0,bad:1}))))
     .then(res=>{
@@ -1018,8 +1016,8 @@ function finishImport(add,skip,bad){
     const R=sortedRuns(),last=R[R.length-1];
     if(last&&!last.kind)last.kind=pendingKind||nextKindBefore(last);
   }
-  save();closeSheet();render();
-  if(add&&syncOn())syncPush(true);
+  if(add)touch();else save();
+  closeSheet();render();
   if(!add){toast(skip?'Всё это уже загружено':(bad?'Файл не разобрался':'Пробежек в файле не нашлось'));return}
   const R=sortedRuns(),last=R[R.length-1];
   toast(`Добавлено ${add} ${plural(add,'пробежка','пробежки','пробежек')}`);
@@ -1155,13 +1153,15 @@ function parseCSV(text){
 
 
 /* ==================== синхронизация через gist ====================
-   Секрет живёт только в этом браузере, в репозитории его нет.
-   Пробежки сливаются объединением по ключу «дата + дистанция»,
-   так что телефон и компьютер сходятся к одному состоянию. */
+   На iPhone у приложения с рабочего стола своё хранилище, отдельное от Safari.
+   Поэтому единственный надёжный способ видеть одни и те же данные везде —
+   держать их в облаке: забираем при каждом открытии, отправляем после любого
+   изменения. Токен живёт только в localStorage, в репозитории его нет. */
 const SKEY='razbeg.sync';
 function syncCfg(){try{return JSON.parse(localStorage.getItem(SKEY))||{}}catch(e){return {}}}
 function syncSave(c){localStorage.setItem(SKEY,JSON.stringify(c))}
 function syncOn(){const c=syncCfg();return !!(c.gist&&c.token)}
+let syncBusy=false;
 async function gistCall(method,body){
   const c=syncCfg();
   const res=await fetch('https://api.github.com/gists/'+c.gist,{
@@ -1174,59 +1174,82 @@ function mergeRuns(a,b){
   const out=[],seen=new Set();
   for(const r of [...a,...b]){
     const k=r.date+'|'+Math.round(r.dist*10);
-    if(seen.has(k))continue;
+    const i=seen.has(k)?out.findIndex(x=>x.date+'|'+Math.round(x.dist*10)===k):-1;
+    if(i>=0){ // одна и та же пробежка с двух устройств: берём ту, где есть ответ
+      if(!out[i].rpe&&r.rpe)out[i]=r;
+      continue;
+    }
     seen.add(k);out.push(r);
   }
   return out.sort((x,y)=>x.date<y.date?-1:1);
 }
 async function syncPull(quiet){
-  if(!syncOn())return false;
+  if(!syncOn()||syncBusy)return false;
+  syncBusy=true;
   try{
     const g=await gistCall('GET');
     const f=g.files&&g.files['razbeg.json'];
     if(!f)return false;
     const raw=f.truncated?await (await fetch(f.raw_url)).text():f.content;
-    const rem=JSON.parse(raw);
-    const before=S.runs.length;
+    const rem=JSON.parse(raw||'{}');
+    const before=JSON.stringify(S.runs);
     S.runs=mergeRuns(S.runs,rem.runs||[]);
-    if(rem.profile&&(rem.updated||0)>(S.updated||0))S.profile=rem.profile;
-    S.updated=Math.max(S.updated||0,rem.updated||0);
+    S.seen=rem.seen&&rem.seen.length>(S.seen||[]).length?rem.seen:S.seen;
+    S.syncedAt=Date.now();
+    const changed=JSON.stringify(S.runs)!==before;
     save();render();
-    if(!quiet)toast(S.runs.length>before?`Забрано ${S.runs.length-before} ${plural(S.runs.length-before,'пробежка','пробежки','пробежек')}`:'Уже всё на месте');
-    return S.runs.length>before;
+    if(!quiet)toast(changed?'Данные забраны':'Уже всё на месте');
+    // локальных пробежек могло быть больше — вернём их в облако
+    if(changed&&(rem.runs||[]).length!==S.runs.length)syncPush(true);
+    return changed;
   }catch(e){if(!quiet)toast('Не забралось: '+e.message);return false}
+  finally{syncBusy=false}
 }
 async function syncPush(quiet){
   if(!syncOn())return false;
   try{
     S.updated=Date.now();
     await gistCall('PATCH',{files:{'razbeg.json':{content:JSON.stringify(
-      {profile:S.profile,runs:S.runs,seen:S.seen,updated:S.updated},null,1)}}});
-    save();
+      {runs:S.runs,seen:S.seen,updated:S.updated},null,1)}}});
+    S.syncedAt=Date.now();save();
     if(!quiet)toast('Отправлено');
     return true;
   }catch(e){if(!quiet)toast('Не отправилось: '+e.message);return false}
 }
+/* Любое изменение данных проходит здесь: сохранили локально и отправили в облако. */
+function touch(){save();if(syncOn())syncPush(true)}
+function syncAge(){
+  if(!S.syncedAt)return 'ещё не синхронизировалось';
+  const m=Math.round((Date.now()-S.syncedAt)/60000);
+  if(m<1)return 'только что';
+  if(m<60)return `${m} ${plural(m,'минуту','минуты','минут')} назад`;
+  const h=Math.round(m/60);
+  if(h<24)return `${h} ${plural(h,'час','часа','часов')} назад`;
+  const d=Math.round(h/24);
+  return `${d} ${plural(d,'день','дня','дней')} назад`;
+}
 function syncSheet(){
   const c=syncCfg();
   openSheet(`<h2>Синхронизация</h2>
-    <div class="hint" style="margin-top:8px">Данные лежат в твоём приватном гисте на GitHub. Телефон и компьютер видят одно и то же, а при переустановке браузера ничего не теряется.</div>
+    <div class="hint" style="margin-top:8px">На iPhone у приложения с рабочего стола своё хранилище, отдельное от Safari: что загрузил в браузере, в приложении не появится. Общее облако решает это — и заодно данные не пропадут при переустановке.</div>
     <ol class="ol">
-      <li>Создай токен: github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token, отметить только область <b>gist</b>.</li>
-      <li>Вставь его и номер гиста сюда. Токен остаётся только в этом браузере.</li>
+      <li>Токен: github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token, отметить только область <b>gist</b>.</li>
+      <li>Вставить сюда токен и номер гиста. <b>Сделать это нужно в каждом месте, откуда открываешь приложение</b> — и в Safari, и в приложении с рабочего стола.</li>
     </ol>
-    <div class="f"><label>Номер гиста</label><input type="text" id="syG" value="${c.gist||''}" placeholder="32 символа из адреса гиста"></div>
-    <div class="f"><label>Токен</label><input type="password" id="syT" value="${c.token||''}" placeholder="ghp_…"></div>
+    <div class="f"><label>Номер гиста</label><input type="text" id="syG" value="${c.gist||''}" placeholder="32 символа из адреса гиста" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    <div class="f"><label>Токен</label><input type="password" id="syT" value="${c.token||''}" placeholder="ghp_…" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
     <button class="btn" onclick="syncSaveFields()">Сохранить и забрать данные</button>
     <div style="height:8px"></div>
     <div class="row">
-      <button class="btn sec sm" onclick="syncPush()">Отправить</button>
-      <button class="btn sec sm" onclick="syncPull()">Забрать</button>
+      <button class="btn sec sm" onclick="syncPush()">Отправить сейчас</button>
+      <button class="btn sec sm" onclick="syncPull()">Забрать сейчас</button>
     </div>
-    ${c.gist?`<button class="btn gh sm" style="margin-top:8px" onclick="syncForget()">Отключить</button>`:''}`);
+    ${c.gist?`<div class="hint" style="margin-top:12px">Последний обмен: ${syncAge()}.</div>
+      <button class="btn gh sm" style="margin-top:8px" onclick="syncForget()">Отключить</button>`:''}`);
 }
 function syncSaveFields(){
-  syncSave({gist:document.getElementById('syG').value.trim(),token:document.getElementById('syT').value.trim()});
+  const g=document.getElementById('syG').value.trim().replace(/^.*\//,'');
+  syncSave({gist:g,token:document.getElementById('syT').value.trim()});
   closeSheet();syncPull();
 }
 function syncForget(){localStorage.removeItem(SKEY);closeSheet();render();toast('Синхронизация отключена')}
@@ -1267,6 +1290,9 @@ function demo(){
 /* ==================== старт ==================== */
 document.querySelectorAll('.tb').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;save();render()});
 if(syncOn())syncPull(true);
+// приложение вернулось из фона — проверяем, не появилось ли новых данных
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&syncOn())syncPull(true)});
+window.addEventListener('online',()=>{if(syncOn())syncPull(true)});
 render();
 </script>
 </body>
