@@ -59,7 +59,8 @@ input,select{font:inherit;color:inherit}
 .hero .det{color:var(--mut);font-size:14px;margin-top:8px}
 .hero .why{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);color:var(--mut);font-size:13px}
 .watch{margin-top:15px;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:12px;padding:12px 13px}
-.wl{font-size:13.5px;font-variant-numeric:tabular-nums;padding:3px 0;color:var(--tx)}
+.wl{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;font-variant-numeric:tabular-nums;padding:5px 0;color:var(--mut)}
+.wl b{color:var(--tx);font-weight:600;text-align:right}
 .wl+.wl{border-top:1px dashed rgba(255,255,255,.07)}
 
 .btn{display:block;width:100%;text-align:center;background:var(--acc);color:#131600;font-weight:650;padding:15px;border-radius:14px;font-size:16px}
@@ -227,40 +228,46 @@ function defaultProfile(){return {goal:'habit',days:2,base:8,skip:0,start:iso(mo
 /* ==================== маршруты ====================
    Набеганные километры откладываются по реальной карте. Каждая остановка — факт. */
 const ROUTES=[
- {name:'Волга и донская степь',sub:'Волжский → Борисоглебск, 425 км',ic:'🌾',stops:[
-  {km:10, c:'Волжская ГЭС',       f:'На момент запуска в 1961 году — крупнейшая гидроэлектростанция Европы. По плотине длиной больше трёх километров идёт дорога на правый берег: с неё Волга видна сразу в обе стороны.'},
-  {km:25, c:'Волгоград',          f:'«Родина-мать зовёт!» на Мамаевом кургане — 85 метров вместе с мечом. Когда монумент открыли в 1967 году, это была самая высокая статуя в мире.'},
-  {km:70, c:'Дубовка',            f:'В XVIII веке Дубовка была столицей волжского казачьего войска и перевалочным пунктом волго-донского пути: товары поднимали по Волге и дальше везли на Дон сухим путём.'},
-  {km:105,c:'Иловля',             f:'Здесь Волга и Дон сходятся ближе всего — около 60 километров. В 1569 году турецкое войско пыталось прорыть тут канал и бросило работу. Волго-Донской канал построили только в 1952-м, южнее.'},
-  {km:160,c:'Фролово',            f:'Город вырос из хутора при станции Арчеда на железной дороге Грязи — Царицын, открытой в 1871 году. Дорога связала донскую степь с центром страны.'},
-  {km:225,c:'Михайловка',         f:'Слобода на реке Медведице, основана в 1762 году. Здесь работает Себряковский цементный завод — один из крупнейших в стране.'},
-  {km:300,c:'Новоаннинский',      f:'Стоит на Бузулуке, притоке Хопра. Хопёр считают одной из самых чистых рек европейской части России — по нему и сейчас ходят на байдарках.'},
-  {km:360,c:'Урюпинск',           f:'Неофициальная столица российской провинции. Здесь вяжут платки и паутинки из козьего пуха, а в центре города стоит памятник козе.'},
-  {km:425,c:'Борисоглебск',       f:'При Петре I на Хопре работала корабельная верфь: лес сплавляли по реке, здесь строили суда для Азовских походов.'},
- ]},
- {name:'Черноземьем к Москве',sub:'Борисоглебск → Москва, 580 км',ic:'🌻',stops:[
-  {km:130,c:'Тамбов',             f:'Основан в 1636 году как крепость на засечной черте — цепи валов, рвов и завалов, прикрывавшей страну от набегов из степи.'},
-  {km:225,c:'Моршанск',           f:'В XIX веке — крупнейшая хлебная пристань на Цне. Отсюда зерно уходило водой на север, в Москву и Петербург.'},
-  {km:295,c:'Шацк',               f:'Сторожевой городок, поставленный в 1553 году. Такие города-крепости ставили цепочкой, чтобы дым сигнального костра был виден от одного до другого.'},
-  {km:425,c:'Рязань',             f:'Нынешняя Рязань — бывший Переяславль-Рязанский. Настоящая Старая Рязань стоит в шестидесяти километрах ниже по Оке: её сожгли в 1237 году, и город больше не поднялся. Валы там видны до сих пор.'},
-  {km:495,c:'Луховицы',           f:'Здесь поставили памятник огурцу — «огурцу-кормильцу». Луховицкий огурец кормил окрестные сёла весь XX век и кормит до сих пор.'},
-  {km:515,c:'Коломна',            f:'Из шестнадцати башен Коломенского кремля XVI века уцелело семь. А коломенскую пастилу делали из печёных яблок с белком, взбивая массу почти сутки.'},
-  {km:580,c:'Москва',             f:'Отсюда считают километры по всей стране: знак «нулевой километр» лежит у Воскресенских ворот, на входе на Красную площадь.'},
- ]},
- {name:'Государева дорога',sub:'Москва → Санкт-Петербург, 635 вёрст',ic:'🛤',stops:[
-  {km:20, c:'Химки',              f:'Канал имени Москвы открыли в 1937 году. После него Москву стали называть портом пяти морей.'},
-  {km:65, c:'Солнечногорск',      f:'Озеро Сенеж — самое большое в Подмосковье, и оно рукотворное: появилось в 1820-х при строительстве Екатерининского канала.'},
-  {km:85, c:'Клин',               f:'В клинском доме Чайковский дописал Шестую симфонию. Через год после его смерти здесь открыли первый в России мемориальный музыкальный музей.'},
-  {km:130,c:'Завидово',           f:'Иваньковское водохранилище местные зовут Московским морем: больше 300 км² воды на месте волжских лугов.'},
-  {km:170,c:'Тверь',              f:'В 1468 году тверской купец Афанасий Никитин ушёл отсюда в Индию — за тридцать лет до Васко да Гамы. Его записки известны как «Хождение за три моря».'},
-  {km:240,c:'Торжок',             f:'Новоторжское золотное шитьё — промысел, которому больше семисот лет. Пушкин заезжал в Торжок по дороге между столицами десятки раз.'},
-  {km:285,c:'Вышний Волочёк',     f:'Здесь в начале XVIII века заработала первая в России искусственная водная система: она связала Волгу с Балтикой и кормила Петербург хлебом.'},
-  {km:330,c:'Бологое',            f:'Почти ровно середина Николаевской железной дороги, открытой в 1851 году. Отсюда и присказка «где-то между Ленинградом и Москвой».'},
-  {km:385,c:'Валдай',             f:'Валдайские колокольчики лили с XVIII века, их звон был слышен за версту. Иверский монастырь на острове основан в 1653 году.'},
-  {km:440,c:'Крестцы',            f:'Крестецкая строчка — сквозная вышивка по продёрнутой нити. Промысел живёт с 1860-х годов.'},
-  {km:525,c:'Великий Новгород',   f:'В 1951 году здесь нашли первую берестяную грамоту. Сейчас их больше тысячи — это живая речь людей XI–XV веков.'},
-  {km:590,c:'Чудово',             f:'Осенью 1874 года Некрасов прожил на Чудовской Луке две недели и написал здесь целый цикл стихов.'},
-  {km:635,c:'Санкт-Петербург',    f:'Финиш. От Волжского до Невы — 1640 километров. Почтовый тракт между столицами считали в 635 вёрст, и последнюю его часть ты прошёл ногами.'},
+ {name:'Карельский перешеек',sub:'от города вдоль залива на Выборг, через перешеек к Ладоге и обратно',ic:'🌲',stops:[
+  {km:12, c:'Лахта',                f:'Отсюда начинается перешеек — полоса суши между Финским заливом и Ладогой шириной от 45 до 110 километров. Всё, что дальше, лежит на ней.'},
+  {km:18, c:'Ольгино',              f:'Дюны вдоль берега — древние пляжи Литоринового моря, которое стояло здесь после ледника и было заметно выше нынешнего залива.'},
+  {km:25, c:'Лисий Нос',            f:'Мелководье уходит от берега на сотни метров. Зимой по нему намерзает такой лёд, что до Кронштадта в старину ездили на санях.'},
+  {km:34, c:'Сестрорецк',           f:'Оружейный завод, основанный Петром, работал больше двух веков. Ради заводских нужд запрудили реку Сестру — так появился Разлив.'},
+  {km:38, c:'Разлив',               f:'Тот самый шалаш. Место обозначено гранитным шалашом-памятником 1928 года — редкий случай, когда в граните повторили сено.'},
+  {km:42, c:'Сестрорецкое болото',  f:'Верховое болото, которому около восьми тысяч лет: оно старше почти всего, что вокруг, и его ни разу не осушали. Ледник ушёл — болото осталось.'},
+  {km:46, c:'Солнечное',            f:'Сосны на песке держатся корнями у самой поверхности. Поэтому по здешним дюнам нельзя ездить: колея убивает лес быстрее пожара.'},
+  {km:50, c:'Репино, «Пенаты»',     f:'Усадьба Репина. Он завёл круглый стол с вертушкой, чтобы гости передавали блюда сами: прислуги за столом он не терпел.'},
+  {km:54, c:'Комарово',             f:'На здешнем кладбище лежат Ахматова, Лихачёв, Гердт. Дачи давали академикам и писателям — посёлок так и остался учёным.'},
+  {km:58, c:'Зеленогорск',          f:'До 1948 года — финский Терийоки, дачная столица начала века. На лето сюда уезжал едва ли не весь литературный Петербург.'},
+  {km:64, c:'Ушково',               f:'Финские названия на перешейке держатся в озёрах и станциях. «Ярви» значит просто «озеро» — их тут больше семисот.'},
+  {km:70, c:'Серово',               f:'Береговые валы идут параллельно морю несколькими грядами: каждая — линия прибоя, отступавшая по мере того, как поднималась суша.'},
+  {km:76, c:'Молодёжное',           f:'Суша здесь продолжает подниматься примерно на три миллиметра в год — земля до сих пор распрямляется после снятой тяжести ледника.'},
+  {km:84, c:'Приветнинское',        f:'Открытый берег, где хорошо видно, как мелка Балтика: отойти можно на сотню метров, а воды всё по колено.'},
+  {km:95, c:'Озеро Красавица',      f:'Одно из самых чистых озёр перешейка. Финское имя Каукъярви значит «дальнее озеро» — дальним оно было от всех дорог.'},
+  {km:105,c:'Рощино',               f:'Сосновые боры стоят на песчаных грядах — это озы и камы, насыпанные талыми водами ледника. Такой рельеф тянется через весь перешеек.'},
+  {km:115,c:'Каннельярви',          f:'Перешеек — водораздел: реки с одной стороны идут в залив, с другой в Ладогу, и разделяет их всего несколько километров.'},
+  {km:135,c:'Приморск',             f:'Бывший Койвисто. Кирха 1904 года из серого гранита — одна из самых крупных, что финны успели построить на этом берегу.'},
+  {km:150,c:'Ермилово',             f:'Дальше начинается самая изрезанная часть побережья: шхеры — затопленные скалы, по которым Балтика заходит в сушу сотнями проток.'},
+  {km:165,c:'Выборгский залив',     f:'Шхерные острова здесь — вершины гранитных холмов. Ледник срезал с них всё мягкое, оставив голый камень, отполированный до блеска.'},
+  {km:175,c:'Выборгский замок',     f:'Единственный в России целиком сохранившийся западноевропейский рыцарский замок. Шведы поставили его в 1293 году на голой скале посреди пролива.'},
+  {km:182,c:'Парк Монрепо',         f:'Скальный пейзажный парк: гранитные лбы, вылизанные ледником, среди сосен. Камни здесь — главные экспонаты, их специально не трогали.'},
+  {km:190,c:'Библиотека Аалто',     f:'Библиотека Алвара Аалто 1935 года. Её волнистый деревянный потолок до сих пор разбирают как образцовое решение акустики.'},
+  {km:205,c:'Гвардейское',          f:'Поворот на восток. Дальше дорога идёт поперёк перешейка — от залива к Ладоге, через самую его середину.'},
+  {km:215,c:'Каменногорск',         f:'Гранитные карьеры. Отсюда шёл камень на ленинградские набережные и станции метро — тот самый рапакиви с крупными округлыми зёрнами.'},
+  {km:230,c:'Светогорск',           f:'Город стоит на самой границе. За рекой Вуоксой начинается финская Иматра, и водопад там пускают по расписанию, как аттракцион.'},
+  {km:245,c:'Мельниково',           f:'Бывший Ряйсяля. Вуокса здесь разливается на протоки и озёра: единой реки нет, есть система, в которой легко заблудиться.'},
+  {km:255,c:'Лосево',               f:'Лосевские пороги рукотворные. В 1857 году прорыли канал, чтобы связать Суходольское озеро с Вуоксой, вода пошла не туда и переписала гидрографию всего перешейка.'},
+  {km:265,c:'Суходольское озеро',   f:'После той же аварии 1857 года озеро упало на несколько метров и обнажило берега. Старая береговая линия видна до сих пор.'},
+  {km:275,c:'Вуокса',               f:'Островов на Вуоксе больше, чем их успели сосчитать: протоки постоянно меняются, и карты расходятся между собой.'},
+  {km:285,c:'Крепость Корела',      f:'Шесть веков переходила из рук в руки. В её башне держали семью Емельяна Пугачёва — жену и детей, много лет после его казни.'},
+  {km:295,c:'Бухта Владимирская',   f:'Отсюда ходят на Коневец. На острове лежит Конь-камень — валун весом под семьсот тонн, которому поклонялись задолго до крещения этих мест.'},
+  {km:310,c:'Берег Ладоги',         f:'Ладога — самое большое озеро Европы. Волна на ней бывает морская, и штормы топили корабли не хуже балтийских.'},
+  {km:325,c:'Громово',              f:'Кругом озёрные котловины, выпаханные ледником. Их вытянутость с северо-запада на юго-восток — это направление, в котором он двигался.'},
+  {km:340,c:'Сосново',              f:'Граница тайги: отсюда на север лес идёт почти без перерыва. Южнее перешейка такого сплошного массива уже нет.'},
+  {km:355,c:'Орехово',              f:'Озёра здесь лежат цепочками в ложбинах между камами. Вода в них тёмная от торфа, но чистая.'},
+  {km:365,c:'Токсово',              f:'Лыжная столица под городом. Здешние горки — тоже камы: ледник насыпал их из песка и гравия, а люди приспособили под трамплины.'},
+  {km:375,c:'Всеволожск',           f:'Отсюда начиналась Дорога жизни. Километровые столбы вдоль неё стоят до сих пор, и счёт на них идёт от Ленинграда.'},
+  {km:385,c:'Ржевка',               f:'Круг замкнулся: перешеек пройден по кругу — вдоль залива на север, поперёк к Ладоге и обратно вдоль неё к городу.'},
  ]},
 ];
 const STOPS=(()=>{const a=[];let off=0;
@@ -276,86 +283,67 @@ const ROUTE_TOTAL=STOPS[STOPS.length-1].abs;
    может быть два, и подходить к этим ступеням лучше плавнее.
    Прогресс идёт по занятиям, а не по календарю: пропустил неделю — просто
    продолжаешь с той же ступени, ничего не сгорает. */
-const R_=(m)=>({t:'run',m}),W_=(m)=>({t:'walk',m}),F_=(m)=>({t:'fast',m}),J_=(m)=>({t:'jog',m});
-function reps(n,r,w,tail){const a=[];for(let i=0;i<n;i++){a.push(R_(r),W_(w))}if(tail)a.push(R_(r));return a}
+/* Занятие = ровно то, что выставляется на часах: работа, отдых, повторов.
+   Разминку и заминку он отсчитывает сам, поэтому они вне блока. */
+function T_(work,rest,reps,restType){return {work,rest:reps>1?rest:0,reps,restType:restType||'walk'}}
 const LADDER=(()=>{
-  const L=[],add=(n,segs)=>{for(let i=0;i<n;i++)L.push(segs)};
-  add(3,reps(7,1,1.5,true));                                   // 1–3
-  add(3,reps(5,1.5,2,true));                                   // 4–6
-  add(3,[R_(1.5),W_(1.5),R_(3),W_(3),R_(1.5),W_(1.5),R_(3)]);  // 7–9
-  add(3,[R_(3),W_(1.5),R_(5),W_(2.5),R_(3),W_(1.5),R_(5)]);    // 10–12
-  add(1,[R_(5),W_(3),R_(5),W_(3),R_(5)]);                      // 13
-  add(1,[R_(8),W_(5),R_(8)]);                                  // 14
-  add(1,[R_(12),W_(3),R_(8)]);                                 // 15 — своя ступень
-  add(1,[R_(20)]);                                             // 16
-  add(1,[R_(5),W_(3),R_(8),W_(3),R_(5)]);                      // 17
-  add(1,[R_(10),W_(3),R_(10)]);                                // 18
-  add(1,[R_(20),W_(2),R_(5)]);                                 // 19 — своя ступень
-  add(1,[R_(25)]);                                             // 20
-  add(3,[R_(25)]);                                             // 21–23
-  add(3,[R_(28)]);                                             // 24–26
-  add(3,[R_(30)]);                                             // 27–29
+  const L=[],add=(n,t)=>{for(let i=0;i<n;i++)L.push(t)};
+  add(3,T_(1,1.5,8));    // 1–3    8 мин бега
+  add(3,T_(1.5,1.5,7));  // 4–6    10,5
+  add(3,T_(2,1.5,6));    // 7–9    12
+  add(3,T_(3,1.5,5));    // 10–12  15
+  add(2,T_(4,1.5,4));    // 13–14  16
+  add(3,T_(5,1.5,4));    // 15–17  20
+  add(2,T_(7,2,3));      // 18–19  21
+  add(2,T_(8,2,3));      // 20–21  24
+  add(2,T_(12,3,2));     // 22–23  24
+  add(2,T_(15,2,2));     // 24–25  30
+  add(2,T_(20,0,1));     // 26–27  20 непрерывно
+  add(2,T_(25,0,1));     // 28–29  25
+  add(3,T_(30,0,1));     // 30–32  30
   return L;
 })();
 const WARM=5,COOL=5,WALK_PACE=9;   // разминка, заминка и темп шага, мин/км
-const NAME={run:'бегом',walk:'шагом',fast:'бодро',jog:'трусцой'};
-const KOEF={run:1,fast:.85,jog:1.1};
+const REST_NAME={walk:'шагом',jog:'трусцой'};
 
-function runMin(segs){return segs.filter(x=>x.t!=='walk').reduce((s,x)=>s+x.m,0)}
-function walkMin(segs){return WARM+COOL+segs.filter(x=>x.t==='walk').reduce((s,x)=>s+x.m,0)}
-function estKm(segs,pace){
-  let d=(WARM+COOL)/WALK_PACE;
-  for(const x of segs)d+=x.t==='walk'?x.m/WALK_PACE:x.m/(pace*KOEF[x.t]);
-  return Math.round(d*10)/10;
-}
-/* Одинаковые подряд идущие пары сворачиваем: 8 × (1 мин бегом / 1,5 мин шагом) */
-function groups(segs){
-  const g=[];let i=0;
-  while(i<segs.length){
-    if(segs[i+1]&&segs[i].t!==segs[i+1].t){
-      const A=segs[i],B=segs[i+1];let n=0;
-      while(segs[i]&&segs[i+1]&&segs[i].t===A.t&&segs[i+1].t===B.t&&segs[i].m===A.m&&segs[i+1].m===B.m){n++;i+=2}
-      if(n){g.push({work:A,rest:B,reps:n});continue}
-    }
-    g.push({work:segs[i],reps:1});i++;
-  }
-  return g;
-}
-function segsText(segs){
-  return groups(segs).map(g=>g.rest
-    ? (g.reps>1?`${g.reps} × (${mins(g.work.m)} ${NAME[g.work.t]} / ${mins(g.rest.m)} ${NAME[g.rest.t]})`
-               :`${mins(g.work.m)} ${NAME[g.work.t]} → ${mins(g.rest.m)} ${NAME[g.rest.t]}`)
-    : `${mins(g.work.m)} ${NAME[g.work.t]}`).join(' → ');
-}
-/* То же самое, но как это набирается на часах: работа / отдых / повторов */
-function watchLines(segs){
-  const out=[`Разминка · ${WARM} мин шагом`];
-  for(const g of groups(segs)){
-    if(g.rest)out.push(`Работа ${clock(g.work.m)} · отдых ${clock(g.rest.m)} · ${g.reps} ${plural(g.reps,'повтор','повтора','повторов')}`);
-    else out.push(`Работа ${clock(g.work.m)} · без отдыха`);
-  }
-  out.push(`Заминка · ${COOL} мин шагом`);
-  return out;
+function runMin(t){return Math.round(t.work*t.reps*10)/10}
+function restMin(t){return Math.round(t.rest*(t.reps-1)*10)/10}
+function allMin(t){return Math.round((WARM+COOL+runMin(t)+restMin(t))*10)/10}
+function estKm(t,pace){
+  const rest=t.restType==='jog'?restMin(t)/(pace*1.1):restMin(t)/WALK_PACE;
+  return Math.round((runMin(t)/(t.restType==='jog'?pace*.85:pace)+rest+(WARM+COOL)/WALK_PACE)*10)/10;
 }
 function clock(m){const w=Math.floor(m),s=Math.round((m-w)*60);return `${w}:${String(s).padStart(2,'0')}`}
 function mins(m){return km(m)+' мин'}
+function planText(t){
+  return t.reps>1
+    ? `${t.reps} × ${mins(t.work)} бегом через ${mins(t.rest)} ${REST_NAME[t.restType]}`
+    : `${mins(t.work)} бегом без перерыва`;
+}
+/* Строки ровно под поля на часах */
+function watchRows(t){
+  const rows=[['Разминка',`${WARM} мин шагом`],['Работа',clock(t.work)]];
+  if(t.reps>1)rows.push(['Отдых',`${clock(t.rest)} ${REST_NAME[t.restType]}`]);
+  rows.push(['Повторов',String(t.reps)]);
+  rows.push(['Заминка',`${COOL} мин шагом`]);
+  return rows;
+}
 
-/* Единая сборка занятия — и для лестницы, и для второй фазы. */
-function makeSession(segs,day,pace,kind,extra){
-  const rm=runMin(segs),wm=walkMin(segs);
-  return Object.assign({day,segs,kind,type:kind==='intervals'?'intervals':(kind==='long'?'long':'easy'),
-    runMin:Math.round(rm*10)/10,walkMin:wm,allMin:Math.round((rm+wm)*10)/10,
-    dist:estKm(segs,pace),plan:segsText(segs),watch:watchLines(segs)},extra||{});
+function makeSession(t,day,pace,kind,extra){
+  return Object.assign({day,t,kind,
+    type:kind==='intervals'?'intervals':(kind==='long'?'long':'easy'),
+    work:t.work,rest:t.rest,reps:t.reps,
+    runMin:runMin(t),allMin:allMin(t),dist:estKm(t,pace),
+    plan:planText(t),watch:watchRows(t)},extra||{});
 }
 function ladderSession(idx,day,pace){
-  const segs=LADDER[Math.min(idx,LADDER.length-1)];
-  const cont=segs.filter(x=>x.t!=='walk').length===1;
-  const n=segs.filter(x=>x.t!=='walk').length;
-  return makeSession(segs,day,pace,cont?'long':'easy',{
-    phase:'ladder',step:Math.min(idx,LADDER.length-1)+1,total:LADDER.length,
+  const i=Math.min(idx,LADDER.length-1),t=LADDER[i];
+  const cont=t.reps===1;
+  return makeSession(t,day,pace,cont?'long':'easy',{
+    phase:'ladder',step:i+1,total:LADDER.length,
     title:cont?'Непрерывный бег':'Бег с ходьбой',
-    goal:cont?`Пробежать ${mins(runMin(segs))} и ни разу не перейти на шаг.`
-             :`Отбежать все отрезки целиком — их ${n}. Скорость не важна совсем.`});
+    goal:cont?`Пробежать ${mins(t.work)} и ни разу не перейти на шаг.`
+             :`Отбежать все ${t.reps} ${plural(t.reps,'отрезок','отрезка','отрезков')} целиком. Скорость не важна совсем.`});
 }
 
 /* ==================== движок плана ====================
@@ -433,19 +421,17 @@ function buildWeek(volMin,map,longCap,G,pace,wi){
   const rest=volMin-long,other=map.length-1;
   // лёгкая не должна догонять длинную, иначе длинная перестаёт быть длинной
   const easy=other>0?Math.min(Math.round(long*.75),Math.round(rest/other)):0;
-  // скоростная работа — раз в две недели, когда недельное время это позволяет
   const hard=(volMin>=80&&other>=1&&wi%2===0)?1:0;
   return map.map((d,k)=>{
     if(k===map.length-1)
-      return makeSession([R_(long)],d,pace,'long',{phase:'build',title:'Длинная',
+      return makeSession(T_(long,0,1),d,pace,'long',{phase:'build',title:'Длинная',
         goal:`Пробежать ${mins(long)} целиком, ровно и медленно. На секундомер не смотреть.`});
     if(hard&&k===0){
-      const n=Math.max(4,Math.min(10,Math.round(easy/4)));
-      const segs=[];for(let j=0;j<n;j++)segs.push(F_(2),J_(2));
-      return makeSession(segs,d,pace,'intervals',{phase:'build',title:'Ускорения',
-        goal:'Все ускорения одинаковые: последнее не медленнее первого. Если последнее провалилось — в следующий раз делай на одно меньше.'});
+      const n=Math.max(4,Math.min(10,Math.round(easy/2)));
+      return makeSession(T_(2,2,n,'jog'),d,pace,'intervals',{phase:'build',title:'Ускорения',
+        goal:'Все ускорения одинаковые: последнее не медленнее первого. Провалилось последнее — в следующий раз делай на один меньше.'});
     }
-    return makeSession([R_(easy)],d,pace,'easy',{phase:'build',title:'Лёгкая',
+    return makeSession(T_(easy,0,1),d,pace,'easy',{phase:'build',title:'Лёгкая',
       goal:`${mins(easy)} в разговорном темпе, без ускорений.`});
   }).filter(x=>x.runMin>=5);
 }
@@ -547,17 +533,19 @@ function render(){
 
 /* ---------- СЕГОДНЯ ---------- */
 /* Карточка занятия: что выставить на часах, с каким темпом и зачем. */
-function heroSession(s,w,plan,mode){
+function heroSession(s,w,plan,mode,yest){
   const band=plan.paceKnown
     ? `${pace(plan.pace*0.94,1)}–${pace(plan.pace*1.12,1)} /км — это твой обычный лёгкий темп по загруженным пробежкам.`
     : 'медленнее, чем кажется правильным.';
   return `<div class="hero"><div class="glow"></div>
-    ${mode==='перенос'?'<span class="type">Догоняем</span>':`<span class="type ${s.kind==='intervals'?'blue':''}">${s.title}</span>`}
+    <span class="type ${s.kind==='intervals'?'blue':''}">${s.title}</span>
     <div class="big">${km(s.runMin)} <span>мин бега</span></div>
     <div class="det">${s.plan}</div>
+    ${mode==='свободный'?`<div class="det" style="margin-top:10px;color:var(--tx)">По расписанию сегодня свободный день, но занятие ждёт тебя — беги, если хочется. Следующие просто сдвинутся${yest?'. Вчера ты уже бежал: если тело просит паузу, это тоже нормальный ответ':''}.</div>`:''}
     <div class="watch">
       <div class="lbl" style="margin-bottom:7px">На часы</div>
-      ${s.watch.map(l=>`<div class="wl">${l}</div>`).join('')}
+      ${s.watch.map(([k,v])=>`<div class="wl"><span>${k}</span><b>${v}</b></div>`).join('')}
+      <div class="hint" style="margin-top:9px;font-size:12px">Разминку и заминку отсчитываешь сам, в интервальный таймер идут только работа, отдых и повторы.</div>
     </div>
     <div class="why"><b style="font-weight:600;color:var(--tx)">Темп:</b> ${band} Проверка простая — на бегу можешь сказать фразу из пяти слов и не задохнуться. Не можешь — сбавь, это не ошибка.</div>
     <div class="why"><b style="font-weight:600;color:var(--tx)">Цель:</b> ${s.goal}</div>
@@ -580,24 +568,26 @@ function vToday(plan,st){
   const missed=M.filter(s=>!s.done&&!s.extra&&s.day<td&&addDays(w.start,s.day)>=since);
   const restDays=6-td;
 
+  // Следующее занятие есть всегда — бежать или нет, решает не приложение.
+  const scheduled=!!mine;
+  const nextUp=mine||(w.phase==='ladder'
+    ? ladderSession(plan.pos,td,plan.pace)
+    : (M.find(x=>!x.done&&!x.extra)||plan.weeks[w.i+1]?.sessions[0]));
+  const yest=M.filter(x=>x.done).some(x=>x.done.date===iso(addDays(today(),-1)));
+
   let hero;
   if(doneToday){
     hero=`<div class="hero"><div class="glow"></div>
       <span class="type">Сделано сегодня</span>
       <div class="big">${km(doneToday.dist)} <span>км</span></div>
       <div class="det">${doneToday.min?pace(doneToday.min,doneToday.dist)+' /км · '+Math.round(doneToday.min)+' мин':'Отметка вручную'}</div>
-      <div class="why">${w.phase==='ladder'?`Ступень ${Math.min(plan.pos,LADDER.length)} из ${LADDER.length} пройдена.`:`Неделя ${w.i+1}: ${km(w.actualMin)} из ${km(w.plannedMin)} мин бега.`}</div></div>`;
-  } else if(mine){
-    hero=heroSession(mine,w,plan,'сегодня');
-  } else if(left.length&&restDays<left.length){
-    hero=heroSession(left[0],w,plan,'перенос');
+      <div class="why">${w.phase==='ladder'?`Ступень ${Math.min(plan.pos,LADDER.length)} из ${LADDER.length} пройдена. Следующая — ${mins(ladderSession(plan.pos,td,plan.pace).runMin)} бега.`:`Неделя ${w.i+1}: ${km(w.actualMin)} из ${km(w.plannedMin)} мин бега.`}</div></div>`;
+  } else if(nextUp){
+    hero=heroSession(nextUp,w,plan,scheduled?'план':'свободный',yest);
   } else {
-    const nx=M.find(s=>!s.done&&s.day>td);
-    hero=`<div class="hero"><div class="glow"></div>
-      <span class="type rest">Отдых</span>
-      <div class="big">0 <span>мин</span></div>
-      <div class="det">Сегодня не бежим. День отдыха между занятиями — часть программы, мышцы и связки перестраиваются именно в него.</div>
-      <div class="why">${nx?`Следующее занятие: ${DOW[nx.day]} ${fmtDate(addDays(w.start,nx.day))} — ${mins(nx.runMin)} бега${nx.title?', '+nx.title.toLowerCase():''}`:'Неделя закрыта.'}</div></div>`;
+    hero=`<div class="hero"><div class="glow"></div><span class="type">Готово</span>
+      <div class="big">${LADDER.length}<span> / ${LADDER.length}</span></div>
+      <div class="det">Программа пройдена целиком.</div></div>`;
   }
 
   return `
@@ -663,29 +653,26 @@ function vPlan(plan,st){
 }
 /* Лестница целиком: видно и пройденное, и чем всё кончится. */
 function ladderCard(plan){
-  const pos=plan.pos;
-  // сворачиваем одинаковые подряд идущие ступени в одну строку
-  const rows=[];
-  LADDER.forEach((segs,i)=>{
-    const key=JSON.stringify(segs);
+  const pos=plan.pos,rows=[];
+  LADDER.forEach((t,i)=>{
+    const key=t.work+'/'+t.rest+'/'+t.reps;
     const last=rows[rows.length-1];
     if(last&&last.key===key){last.to=i;return}
-    rows.push({key,from:i,to:i,segs});
+    rows.push({key,from:i,to:i,t});
   });
   return `<div class="card">
     <div class="lbl">Лестница · ${LADDER.length} занятий</div>
-    <div class="hint" style="margin-top:8px">По образцу NHS Couch to 5K. Идём по занятиям, а не по календарю: пропустил неделю — вернулся на ту же ступень, ничего не сгорело. Каждая ступень повторяется, пока не станет привычной.</div>
+    <div class="hint" style="margin-top:8px">По образцу NHS Couch to 5K, но пересобрано под одну настройку часов: работа, отдых, повторов. Идём по занятиям, а не по календарю — пропустил неделю, вернулся на ту же ступень.</div>
     <div style="margin-top:14px">
     ${rows.map(r=>{
-      const done=pos>r.to, now=pos>=r.from&&pos<=r.to;
-      const n=r.to-r.from+1;
-      return `<div class="ses ${done?'ok':''}" style="align-items:flex-start;opacity:${done?.55:1}">
+      const done=pos>r.to,now=pos>=r.from&&pos<=r.to,n=r.to-r.from+1;
+      return `<div class="ses ${done?'ok':''}" style="align-items:flex-start;opacity:${done?.5:1}">
         <span class="dot" style="margin-top:6px;background:${done?'var(--acc-dim)':(now?'var(--acc)':'var(--line)')}"></span>
-        <span class="t">${r.from+1}${n>1?'–'+(r.to+1):''} · ${km(runMin(r.segs))} мин бега${now?' <span style="color:var(--acc);font-size:12px">сейчас здесь</span>':''}
-          <small>${segsText(r.segs)}</small></span>
+        <span class="t">${r.from+1}${n>1?'–'+(r.to+1):''} · ${km(runMin(r.t))} мин бега${now?' <span style="color:var(--acc);font-size:12px">сейчас здесь</span>':''}
+          <small>${r.t.reps>1?`работа ${clock(r.t.work)} · отдых ${clock(r.t.rest)} · ${r.t.reps} ${plural(r.t.reps,'повтор','повтора','повторов')}`:`работа ${clock(r.t.work)} · без отдыха`}</small></span>
       </div>`}).join('')}
     </div>
-    <div class="hint" style="margin-top:12px">Дальше — набор объёма в километрах: длинная пробежка растёт не больше чем на 10% от самой длинной за последний месяц.</div>
+    <div class="hint" style="margin-top:12px">На ступенях 26–27 бега меньше, чем на 24–25, — и это не ошибка. Там впервые убирается перерыв, а непрерывность сама по себе тяжелее, поэтому объём временно опускается.</div>
   </div>`;
 }
 function ringCard(plan,st){
@@ -785,7 +772,7 @@ function routeInfo(total){
 function routeStrip(st){
   const R=routeInfo(st.total);
   if(!R.next)return `<div class="card"><div class="lbl">Путь</div>
-    <div style="margin-top:8px"><b>Весь маршрут пройден</b><div class="hint">${km(st.total)} км — от Москвы до Петербурга и вокруг Золотого кольца.</div></div></div>`;
+    <div style="margin-top:8px"><b>Весь маршрут пройден</b><div class="hint">${km(st.total)} км — весь Карельский перешеек по кругу.</div></div></div>`;
   return `<button class="card" style="display:block;width:100%;text-align:left" onclick="S.tab='route';save();render()">
     <div style="display:flex;justify-content:space-between;align-items:baseline">
       <div class="lbl">Путь · ${ROUTES[R.next.ri].name}</div>
@@ -799,45 +786,54 @@ function routeStrip(st){
       <div style="font-size:22px">📍</div>
     </div>
     ${R.last?`<div class="hint" style="margin-top:9px">Последняя отметка: ${R.last.c}, ${km(R.last.abs)} км</div>`:
-      `<div class="hint" style="margin-top:9px">Старт — Волжский. Впереди 1640 км до Невы.</div>`}
+      `<div class="hint" style="margin-top:9px">Старт — северная окраина города. Впереди ${ROUTE_TOTAL} км по Карельскому перешейку.</div>`}
   </button>`;
 }
 function vRoute(plan,st){
   const R=routeInfo(st.total);
   const A=awardState(st),got=A.filter(a=>a.got).length;
-  return `<div class="top"><div><h1>Путь</h1><div class="sub">${km(st.total)} из ${ROUTE_TOTAL} км · ${R.passed.length} ${plural(R.passed.length,'остановка','остановки','остановок')} позади</div></div></div>
-  ${ROUTES.map((r,ri)=>{
-    const stops=STOPS.filter(s=>s.ri===ri);
-    const start=ri===0?0:STOPS.filter(s=>s.ri===ri-1).slice(-1)[0].abs;
-    const open=!R.next||R.next.ri===ri||st.total>=stops[stops.length-1].abs;
-    if(!open&&st.total<start)return `<div class="card" style="opacity:.5"><div class="lbl">Маршрут ${ri+1}</div>
-      <div style="margin-top:6px"><b>${r.name}</b><div class="hint">${r.sub} · откроется на ${km(start)} км</div></div></div>`;
-    return `<div class="card">
-      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:18px">${r.ic}</span>
-        <div style="flex:1"><b>${r.name}</b><div class="hint">${r.sub}</div></div></div>
-      <div style="margin-top:14px">
-      ${stops.map((s,i)=>{
-        const done=st.total>=s.abs, isNext=R.next&&R.next.abs===s.abs;
-        return `<div style="display:flex;gap:12px">
-          <div style="width:12px;flex:none;display:flex;flex-direction:column;align-items:center">
-            <div style="width:11px;height:11px;border-radius:50%;margin-top:4px;flex:none;
-              background:${done?'var(--acc)':(isNext?'transparent':'var(--line)')};
-              border:${isNext?'2px solid var(--acc)':'none'}"></div>
-            ${i<stops.length-1?`<div style="flex:1;width:2px;background:${done?'var(--acc-dim)':'var(--line)'};margin:3px 0"></div>`:''}
-          </div>
-          <div style="flex:1;min-width:0;padding-bottom:${i<stops.length-1?'16px':'0'}">
-            <div style="display:flex;justify-content:space-between;gap:8px">
-              <b style="color:${done||isNext?'var(--tx)':'var(--mut)'};font-weight:${done?'650':'500'}">${s.c}</b>
-              <span style="font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;flex:none">${km(s.abs)} км</span>
-            </div>
-            ${done?`<div class="hint" style="margin-top:5px">${s.f}</div>`:
-              isNext?`<div class="hint" style="margin-top:5px;color:var(--acc)">Ещё ${km(s.abs-st.total)} км — и откроется факт об этом месте.</div>`:
-              `<div class="hint" style="margin-top:5px;opacity:.45">Факт откроется по прибытии</div>`}
-          </div></div>`}).join('')}
-      </div></div>`}).join('')}
+  const r=ROUTES[0];
+  const locked=STOPS.length-R.passed.length-(R.next?1:0);
+  return `<div class="top"><div><h1>Путь</h1><div class="sub">${km(st.total)} из ${ROUTE_TOTAL} км · ${R.passed.length} ${plural(R.passed.length,'место','места','мест')} позади</div></div></div>
+  <div class="card">
+    <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:18px">${r.ic}</span>
+      <div style="flex:1"><b>${r.name}</b><div class="hint">${r.sub}</div></div></div>
+    <div class="bar" style="height:6px;margin-top:12px"><i style="width:${Math.min(100,st.total/ROUTE_TOTAL*100)}%;background:var(--acc)"></i></div>
+    <div class="hint" style="margin-top:8px">Дорога открывается по мере бега: что впереди — видно только на шаг вперёд.</div>
+  </div>
+  <div class="card">
+    <div style="margin-top:2px">
+    ${R.passed.length?R.passed.map((s,i)=>stopRow(s,true,false,i<R.passed.length-1||!!R.next)).join(''):
+      `<div class="hint" style="padding:6px 0 10px">Пока ни одного места. Первое — ${STOPS[0].c}, через ${km(STOPS[0].abs)} км.</div>`}
+    ${R.next?stopRow(R.next,false,true,locked>0,st.total):''}
+    ${locked>0?`<div style="display:flex;gap:12px">
+      <div style="width:12px;flex:none;display:flex;justify-content:center">
+        <div style="width:11px;height:11px;border-radius:50%;margin-top:4px;background:var(--line)"></div></div>
+      <div style="flex:1;color:var(--mut);font-size:13px;padding-top:1px">
+        Дальше ещё ${locked} ${plural(locked,'место','места','мест')} и ${km(ROUTE_TOTAL-(R.next?R.next.abs:0))} км. Что там — узнаешь, когда добежишь.</div>
+    </div>`:''}
+    </div>
+  </div>
   <div class="card flat" style="margin:22px 0 10px"><div class="lbl">Медали · ${got} из ${A.length}</div></div>
   ${nextAwardCard(A)}
   ${vAwardGrid(A)}<div style="height:20px"></div>`;
+}
+/* строка места: пройденное с фактом, ближайшее — только именем */
+function stopRow(s,done,isNext,line,total){
+  return `<div style="display:flex;gap:12px">
+    <div style="width:12px;flex:none;display:flex;flex-direction:column;align-items:center">
+      <div style="width:11px;height:11px;border-radius:50%;margin-top:4px;flex:none;
+        background:${done?'var(--acc)':'transparent'};border:${isNext?'2px solid var(--acc)':'none'}"></div>
+      ${line?`<div style="flex:1;width:2px;background:${done?'var(--acc-dim)':'var(--line)'};margin:3px 0"></div>`:''}
+    </div>
+    <div style="flex:1;min-width:0;padding-bottom:${line?'16px':'2px'}">
+      <div style="display:flex;justify-content:space-between;gap:8px">
+        <b style="font-weight:${done?'650':'600'}">${s.c}</b>
+        <span style="font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;flex:none">${km(s.abs)} км</span>
+      </div>
+      ${done?`<div class="hint" style="margin-top:5px">${s.f}</div>`
+            :`<div class="hint" style="margin-top:5px;color:var(--acc)">Ещё ${km(s.abs-total)} км — и место откроется.</div>`}
+    </div></div>`;
 }
 
 /* ---------- НАГРАДЫ ---------- */
@@ -1204,7 +1200,7 @@ async function syncPull(quiet){
 async function syncPush(quiet){
   if(!syncOn())return false;
   try{
-    S.updated=Date.parse(iso(today())+'T00:00:00')+S.runs.length;
+    S.updated=Date.now();
     await gistCall('PATCH',{files:{'razbeg.json':{content:JSON.stringify(
       {profile:S.profile,runs:S.runs,seen:S.seen,updated:S.updated},null,1)}}});
     save();
