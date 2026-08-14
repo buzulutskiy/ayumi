@@ -259,7 +259,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 31';
+const APP_VERSION='Аюми 32';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -352,45 +352,45 @@ function defaultProfile(){return {created:iso(today())}}
    Набеганные километры откладываются по реальной карте. Каждая остановка — факт. */
 const ROUTES=[
  {name:'Карельский перешеек',sub:'от города вдоль залива на Выборг, через перешеек к Ладоге и обратно',ic:'🌲',stops:[
-  {km:17, c:'Лахта',                f:'Отсюда начинается перешеек — полоса суши между Финским заливом и Ладогой шириной от 45 до 110 километров. Всё, что дальше, лежит на ней.',ll:[59.999,30.158]},
-  {km:22, c:'Ольгино',              f:'Дюны вдоль берега — древние пляжи Литоринового моря, которое стояло здесь после ледника и было заметно выше нынешнего залива.',ll:[59.995,30.086]},
-  {km:27, c:'Лисий Нос',            f:'Мелководье уходит от берега на сотни метров. Зимой по нему намерзает такой лёд, что до Кронштадта в старину ездили на санях.',ll:[60.014,30.01]},
-  {km:38, c:'Сестрорецк',           f:'Оружейный завод, основанный Петром, работал больше двух веков. Ради заводских нужд запрудили реку Сестру — так появился Разлив.',ll:[60.098,29.964]},
-  {km:40, c:'Разлив',               f:'Тот самый шалаш. Место обозначено гранитным шалашом-памятником 1928 года — редкий случай, когда в граните повторили сено.',ll:[60.0917,29.977]},
-  {km:45, c:'Сестрорецкое болото',  f:'Верховое болото, которому около восьми тысяч лет: оно старше почти всего, что вокруг, и его ни разу не осушали. Ледник ушёл — болото осталось.',ll:[60.125,29.988]},
-  {km:51, c:'Солнечное',            f:'Сосны на песке держатся корнями у самой поверхности. Поэтому по здешним дюнам нельзя ездить: колея убивает лес быстрее пожара.',ll:[60.152,29.933]},
-  {km:56, c:'Репино, «Пенаты»',     f:'Усадьба Репина. Он завёл круглый стол с вертушкой, чтобы гости передавали блюда сами: прислуги за столом он не терпел.',ll:[60.172,29.867]},
-  {km:61, c:'Комарово',             f:'На здешнем кладбище лежат Ахматова, Лихачёв, Гердт. Дачи давали академикам и писателям — посёлок так и остался учёным.',ll:[60.19,29.803]},
-  {km:68, c:'Зеленогорск',          f:'До 1948 года — финский Терийоки, дачная столица начала века. На лето сюда уезжал едва ли не весь литературный Петербург.',ll:[60.201,29.702]},
-  {km:75, c:'Ушково',               f:'Финские названия на перешейке держатся в озёрах и станциях. «Ярви» значит просто «озеро» — их тут больше семисот.',ll:[60.219,29.617]},
-  {km:82, c:'Серово',               f:'Береговые валы идут параллельно морю несколькими грядами: каждая — линия прибоя, отступавшая по мере того, как поднималась суша.',ll:[60.231,29.549]},
-  {km:95, c:'Молодёжное',           f:'Суша здесь продолжает подниматься примерно на три миллиметра в год — земля до сих пор распрямляется после снятой тяжести ледника.',ll:[60.25,29.47]},
-  {km:111, c:'Приветнинское',        f:'Открытый берег, где хорошо видно, как мелка Балтика: отойти можно на сотню метров, а воды всё по колено.',ll:[60.291,29.283]},
-  {km:116, c:'Озеро Красавица',      f:'Одно из самых чистых озёр перешейка. Финское имя Каукъярви значит «дальнее озеро» — дальним оно было от всех дорог.',ll:[60.3052,29.2062]},
-  {km:146,c:'Рощино',               f:'Сосновые боры стоят на песчаных грядах — это озы и камы, насыпанные талыми водами ледника. Такой рельеф тянется через весь перешеек.',ll:[60.253,29.604]},
-  {km:174,c:'Каннельярви',          f:'Перешеек — водораздел: реки с одной стороны идут в залив, с другой в Ладогу, и разделяет их всего несколько километров.',ll:[60.418,29.352]},
-  {km:235,c:'Приморск',             f:'Бывший Койвисто. Кирха 1904 года из серого гранита — одна из самых крупных, что финны успели построить на этом берегу.',ll:[60.367,28.613]},
-  {km:251,c:'Ермилово',             f:'Дальше начинается самая изрезанная часть побережья: шхеры — затопленные скалы, по которым Балтика заходит в сушу сотнями проток.',ll:[60.452,28.601]},
-  {km:278,c:'Выборгский залив',     f:'Шхерные острова здесь — вершины гранитных холмов. Ледник срезал с них всё мягкое, оставив голый камень, отполированный до блеска.',ll:[60.5451,28.7402]},
-  {km:303,c:'Выборгский замок',     f:'Единственный в России целиком сохранившийся западноевропейский рыцарский замок. Шведы поставили его в 1293 году на голой скале посреди пролива.',ll:[60.715,28.729]},
-  {km:306,c:'Парк Монрепо',         f:'Скальный пейзажный парк: гранитные лбы, вылизанные ледником, среди сосен. Камни здесь — главные экспонаты, их специально не трогали.',ll:[60.735,28.7]},
-  {km:311,c:'Библиотека Аалто',     f:'Библиотека Алвара Аалто 1935 года. Её волнистый деревянный потолок до сих пор разбирают как образцовое решение акустики.',ll:[60.712,28.752]},
-  {km:336,c:'Гвардейское',          f:'Поворот на восток. Дальше дорога идёт поперёк перешейка — от залива к Ладоге, через самую его середину.',ll:[60.78,29.05]},
-  {km:365,c:'Каменногорск',         f:'Гранитные карьеры. Отсюда шёл камень на ленинградские набережные и станции метро — тот самый рапакиви с крупными округлыми зёрнами.',ll:[60.951,29.128]},
-  {km:391,c:'Светогорск',           f:'Город стоит на самой границе. За рекой Вуоксой начинается финская Иматра, и водопад там пускают по расписанию, как аттракцион.',ll:[61.11,28.868]},
-  {km:466,c:'Мельниково',           f:'Бывший Ряйсяля. Вуокса здесь разливается на протоки и озёра: единой реки нет, есть система, в которой легко заблудиться.',ll:[60.902,29.98]},
-  {km:516,c:'Лосево',               f:'Лосевские пороги рукотворные. В 1857 году прорыли канал, чтобы связать Суходольское озеро с Вуоксой, вода пошла не туда и переписала гидрографию всего перешейка.',ll:[60.677,30.129]},
-  {km:562,c:'Суходольское озеро',   f:'После той же аварии 1857 года озеро упало на несколько метров и обнажило берега. Старая береговая линия видна до сих пор.',ll:[60.7062,30.3305]},
-  {km:592,c:'Вуокса',               f:'Островов на Вуоксе больше, чем их успели сосчитать: протоки постоянно меняются, и карты расходятся между собой.',ll:[60.8604,30.1152]},
-  {km:626,c:'Крепость Корела',      f:'Шесть веков переходила из рук в руки. В её башне держали семью Емельяна Пугачёва — жену и детей, много лет после его казни.',ll:[61.037,30.126]},
-  {km:641,c:'Бухта Владимирская',   f:'Отсюда ходят на Коневец. На острове лежит Конь-камень — валун весом под семьсот тонн, которому поклонялись задолго до крещения этих мест.',ll:[61.0102,30.3502]},
-  {km:670,c:'Берег Ладоги',         f:'Ладога — самое большое озеро Европы. Волна на ней бывает морская, и штормы топили корабли не хуже балтийских.',ll:[60.7902,30.6403]},
-  {km:740,c:'Громово',              f:'Кругом озёрные котловины, выпаханные ледником. Их вытянутость с северо-запада на юго-восток — это направление, в котором он двигался.',ll:[60.65,30.303]},
-  {km:753,c:'Сосново',              f:'Граница тайги: отсюда на север лес идёт почти без перерыва. Южнее перешейка такого сплошного массива уже нет.',ll:[60.554,30.245]},
-  {km:766,c:'Орехово',              f:'Озёра здесь лежат цепочками в ложбинах между камами. Вода в них тёмная от торфа, но чистая.',ll:[60.47,30.25]},
-  {km:813,c:'Токсово',              f:'Лыжная столица под городом. Здешние горки — тоже камы: ледник насыпал их из песка и гравия, а люди приспособили под трамплины.',ll:[60.152,30.512]},
-  {km:838,c:'Всеволожск',           f:'Отсюда начиналась Дорога жизни. Километровые столбы вдоль неё стоят до сих пор, и счёт на них идёт от Ленинграда.',ll:[60.02,30.633]},
-  {km:853,c:'Ржевка',               f:'Круг замкнулся: перешеек пройден по кругу — вдоль залива на север, поперёк к Ладоге и обратно вдоль неё к городу.',ll:[59.941,30.482]},
+  {km:17, m:12, c:'Лахта',                f:'Отсюда начинается перешеек — полоса суши между Финским заливом и Ладогой шириной от 45 до 110 километров. Всё, что дальше, лежит на ней.',ll:[59.999,30.158]},
+  {km:22, m:25, c:'Ольгино',              f:'Дюны вдоль берега — древние пляжи Литоринового моря, которое стояло здесь после ледника и было заметно выше нынешнего залива.',ll:[59.995,30.086]},
+  {km:27, m:38, c:'Лисий Нос',            f:'Мелководье уходит от берега на сотни метров. Зимой по нему намерзает такой лёд, что до Кронштадта в старину ездили на санях.',ll:[60.014,30.01]},
+  {km:38, m:51, c:'Сестрорецк',           f:'Оружейный завод, основанный Петром, работал больше двух веков. Ради заводских нужд запрудили реку Сестру — так появился Разлив.',ll:[60.098,29.964]},
+  {km:40, m:66, c:'Разлив',               f:'Тот самый шалаш. Место обозначено гранитным шалашом-памятником 1928 года — редкий случай, когда в граните повторили сено.',ll:[60.0917,29.977]},
+  {km:45, m:81, c:'Сестрорецкое болото',  f:'Верховое болото, которому около восьми тысяч лет: оно старше почти всего, что вокруг, и его ни разу не осушали. Ледник ушёл — болото осталось.',ll:[60.125,29.988]},
+  {km:51, m:96, c:'Солнечное',            f:'Сосны на песке держатся корнями у самой поверхности. Поэтому по здешним дюнам нельзя ездить: колея убивает лес быстрее пожара.',ll:[60.152,29.933]},
+  {km:56, m:113, c:'Репино, «Пенаты»',     f:'Усадьба Репина. Он завёл круглый стол с вертушкой, чтобы гости передавали блюда сами: прислуги за столом он не терпел.',ll:[60.172,29.867]},
+  {km:61, m:130, c:'Комарово',             f:'На здешнем кладбище лежат Ахматова, Лихачёв, Гердт. Дачи давали академикам и писателям — посёлок так и остался учёным.',ll:[60.19,29.803]},
+  {km:68, m:147, c:'Зеленогорск',          f:'До 1948 года — финский Терийоки, дачная столица начала века. На лето сюда уезжал едва ли не весь литературный Петербург.',ll:[60.201,29.702]},
+  {km:75, m:166, c:'Ушково',               f:'Финские названия на перешейке держатся в озёрах и станциях. «Ярви» значит просто «озеро» — их тут больше семисот.',ll:[60.219,29.617]},
+  {km:82, m:186, c:'Серово',               f:'Береговые валы идут параллельно морю несколькими грядами: каждая — линия прибоя, отступавшая по мере того, как поднималась суша.',ll:[60.231,29.549]},
+  {km:95, m:206, c:'Молодёжное',           f:'Суша здесь продолжает подниматься примерно на три миллиметра в год — земля до сих пор распрямляется после снятой тяжести ледника.',ll:[60.25,29.47]},
+  {km:111, m:227, c:'Приветнинское',        f:'Открытый берег, где хорошо видно, как мелка Балтика: отойти можно на сотню метров, а воды всё по колено.',ll:[60.291,29.283]},
+  {km:116, m:249, c:'Озеро Красавица',      f:'Одно из самых чистых озёр перешейка. Финское имя Каукъярви значит «дальнее озеро» — дальним оно было от всех дорог.',ll:[60.3052,29.2062]},
+  {km:146,m:273, c:'Рощино',               f:'Сосновые боры стоят на песчаных грядах — это озы и камы, насыпанные талыми водами ледника. Такой рельеф тянется через весь перешеек.',ll:[60.253,29.604]},
+  {km:174,m:297, c:'Каннельярви',          f:'Перешеек — водораздел: реки с одной стороны идут в залив, с другой в Ладогу, и разделяет их всего несколько километров.',ll:[60.418,29.352]},
+  {km:235,m:322, c:'Приморск',             f:'Бывший Койвисто. Кирха 1904 года из серого гранита — одна из самых крупных, что финны успели построить на этом берегу.',ll:[60.367,28.613]},
+  {km:251,m:349, c:'Ермилово',             f:'Дальше начинается самая изрезанная часть побережья: шхеры — затопленные скалы, по которым Балтика заходит в сушу сотнями проток.',ll:[60.452,28.601]},
+  {km:278,m:376, c:'Выборгский залив',     f:'Шхерные острова здесь — вершины гранитных холмов. Ледник срезал с них всё мягкое, оставив голый камень, отполированный до блеска.',ll:[60.5451,28.7402]},
+  {km:303,m:405, c:'Выборгский замок',     f:'Единственный в России целиком сохранившийся западноевропейский рыцарский замок. Шведы поставили его в 1293 году на голой скале посреди пролива.',ll:[60.715,28.729]},
+  {km:306,m:436, c:'Парк Монрепо',         f:'Скальный пейзажный парк: гранитные лбы, вылизанные ледником, среди сосен. Камни здесь — главные экспонаты, их специально не трогали.',ll:[60.735,28.7]},
+  {km:311,m:467, c:'Библиотека Аалто',     f:'Библиотека Алвара Аалто 1935 года. Её волнистый деревянный потолок до сих пор разбирают как образцовое решение акустики.',ll:[60.712,28.752]},
+  {km:336,m:500, c:'Гвардейское',          f:'Поворот на восток. Дальше дорога идёт поперёк перешейка — от залива к Ладоге, через самую его середину.',ll:[60.78,29.05]},
+  {km:365,m:535, c:'Каменногорск',         f:'Гранитные карьеры. Отсюда шёл камень на ленинградские набережные и станции метро — тот самый рапакиви с крупными округлыми зёрнами.',ll:[60.951,29.128]},
+  {km:391,m:570, c:'Светогорск',           f:'Город стоит на самой границе. За рекой Вуоксой начинается финская Иматра, и водопад там пускают по расписанию, как аттракцион.',ll:[61.11,28.868]},
+  {km:466,m:605, c:'Мельниково',           f:'Бывший Ряйсяля. Вуокса здесь разливается на протоки и озёра: единой реки нет, есть система, в которой легко заблудиться.',ll:[60.902,29.98]},
+  {km:516,m:640, c:'Лосево',               f:'Лосевские пороги рукотворные. В 1857 году прорыли канал, чтобы связать Суходольское озеро с Вуоксой, вода пошла не туда и переписала гидрографию всего перешейка.',ll:[60.677,30.129]},
+  {km:562,m:675, c:'Суходольское озеро',   f:'После той же аварии 1857 года озеро упало на несколько метров и обнажило берега. Старая береговая линия видна до сих пор.',ll:[60.7062,30.3305]},
+  {km:592,m:710, c:'Вуокса',               f:'Островов на Вуоксе больше, чем их успели сосчитать: протоки постоянно меняются, и карты расходятся между собой.',ll:[60.8604,30.1152]},
+  {km:626,m:745, c:'Крепость Корела',      f:'Шесть веков переходила из рук в руки. В её башне держали семью Емельяна Пугачёва — жену и детей, много лет после его казни.',ll:[61.037,30.126]},
+  {km:641,m:780, c:'Бухта Владимирская',   f:'Отсюда ходят на Коневец. На острове лежит Конь-камень — валун весом под семьсот тонн, которому поклонялись задолго до крещения этих мест.',ll:[61.0102,30.3502]},
+  {km:670,m:815, c:'Берег Ладоги',         f:'Ладога — самое большое озеро Европы. Волна на ней бывает морская, и штормы топили корабли не хуже балтийских.',ll:[60.7902,30.6403]},
+  {km:740,m:850, c:'Громово',              f:'Кругом озёрные котловины, выпаханные ледником. Их вытянутость с северо-запада на юго-восток — это направление, в котором он двигался.',ll:[60.65,30.303]},
+  {km:753,m:885, c:'Сосново',              f:'Граница тайги: отсюда на север лес идёт почти без перерыва. Южнее перешейка такого сплошного массива уже нет.',ll:[60.554,30.245]},
+  {km:766,m:920, c:'Орехово',              f:'Озёра здесь лежат цепочками в ложбинах между камами. Вода в них тёмная от торфа, но чистая.',ll:[60.47,30.25]},
+  {km:813,m:955, c:'Токсово',              f:'Лыжная столица под городом. Здешние горки — тоже камы: ледник насыпал их из песка и гравия, а люди приспособили под трамплины.',ll:[60.152,30.512]},
+  {km:838,m:990, c:'Всеволожск',           f:'Отсюда начиналась Дорога жизни. Километровые столбы вдоль неё стоят до сих пор, и счёт на них идёт от Ленинграда.',ll:[60.02,30.633]},
+  {km:853,m:1025, c:'Ржевка',               f:'Круг замкнулся: перешеек пройден по кругу — вдоль залива на север, поперёк к Ладоге и обратно вдоль неё к городу.',ll:[59.941,30.482]},
  ]},
 ];
 /* Геометрия настоящего пешего маршрута по данным OpenStreetMap, посчитана
@@ -416,7 +416,19 @@ const ROUTE_PTS=decodeLine(ROUTE_LINE);
 const STOPS=(()=>{const a=[];let off=0;
   ROUTES.forEach((r,ri)=>{r.stops.forEach(s=>a.push({...s,abs:off+s.km,ri}));off+=r.stops[r.stops.length-1].km});
   return a})();
-const ROUTE_TOTAL=STOPS[STOPS.length-1].abs;
+const ROUTE_KM=STOPS[STOPS.length-1].abs;        // реальная длина дороги
+const ROUTE_TOTAL=STOPS[STOPS.length-1].m;       // а мерим путь минутами бега
+/* Место на дороге по набранным минутам: внутри участка идём пропорционально,
+   поэтому метка на карте всегда стоит там же, где следующая цель. */
+function kmForMinutes(mi){
+  if(mi<=0)return 0;
+  let prevKm=0,prevM=0;
+  for(const st of STOPS){
+    if(mi<st.m){const t=(mi-prevM)/(st.m-prevM);return prevKm+(st.abs-prevKm)*t}
+    prevKm=st.abs;prevM=st.m;
+  }
+  return ROUTE_KM;
+}
 
 /* ==================== занятие ====================
    Расписания нет. Есть одно следующее занятие, которое собирается из
@@ -585,6 +597,7 @@ function stats(P){
   const total=R.reduce((s,r)=>s+r.dist,0);
   const longest=R.reduce((m,r)=>Math.max(m,r.dist),0);
   const longestMin=R.reduce((m,r)=>Math.max(m,r.min||0),0);
+  const totalMin=Math.round(R.reduce((s,r)=>s+(r.min||0),0));
   const byMonth={},byWeek={};
   for(const r of R){
     byMonth[r.date.slice(0,7)]=(byMonth[r.date.slice(0,7)]||0)+r.dist;
@@ -603,7 +616,7 @@ function stats(P){
   const avg=a=>a.length?a.reduce((s,r)=>s+r.min,0)/a.reduce((s,r)=>s+r.dist,0):0;
   const p0=avg(paced.slice(0,5)),p1=avg(paced.slice(-5));
   const gain=(paced.length>=8&&p0&&p1)?(p0-p1)*60:0;
-  return {R,total,longest,longestMin,count:R.length,byMonth,byWeek,weekMax,monthMax,streak,best,gain,
+  return {R,total,totalMin,longest,longestMin,count:R.length,byMonth,byWeek,weekMax,monthMax,streak,best,gain,
     early:R.some(r=>r.h!=null&&r.h<7),night:R.some(r=>r.h!=null&&r.h>=21),
     level:P.L,curPace:p1?pace(p1,1):null};
 }
@@ -703,7 +716,7 @@ function render(){
   app.scrollTop=0;
   syncTabHeight();requestAnimationFrame(syncTabHeight);
   const mc=document.getElementById('mapCard');
-  if(mc)mc.onclick=()=>openFullMap(st.total);
+  if(mc)mc.onclick=()=>openFullMap(st.totalMin);
   checkNew(st);
 }
 
@@ -913,87 +926,86 @@ function paceChart(R){
 }
 
 /* ---------- ПУТЬ ---------- */
-function routeInfo(total){
-  const passed=STOPS.filter(s=>total>=s.abs);
-  const next=STOPS.find(s=>total<s.abs);
+function routeInfo(mi){
+  const passed=STOPS.filter(s=>mi>=s.m);
+  const next=STOPS.find(s=>mi<s.m);
   const last=passed[passed.length-1];
-  const from=last?last.abs:0;
-  const p=next?(total-from)/(next.abs-from):1;
+  const from=last?last.m:0;
+  const p=next?(mi-from)/(next.m-from):1;
   return {passed,next,last,p:Math.max(0,Math.min(1,p))};
 }
 /* Через сколько занятий и дней будет следующая точка.
    Пока не набралось хотя бы трёх пробежек за неделю, считать не из чего:
    ни средней длины пробежки, ни того, как часто он вообще бегает. */
 function routeEta(st,P){
-  const R=routeInfo(st.total);
+  const R=routeInfo(st.totalMin);
   if(!R.next)return null;
-  const left=Math.max(0,R.next.abs-st.total);
+  const left=Math.max(0,R.next.m-st.totalMin);
   const runs=sortedRuns();
-  const span=runs.length>1?daysBetween(fromISO(runs[0].date),fromISO(runs[runs.length-1].date)):0;
-  if(runs.length<3||span<7)return {left,ready:false,have:runs.length,span};
-  const per=Math.max(.8,P.kmPer);
-  const ses=Math.max(1,Math.ceil(left/per));
+  // сколько минут даёт одно занятие: по факту, а если данных мало — по ступени
+  const rec=runs.filter(r=>r.min>0).slice(-6).map(r=>r.min);
+  const per=rec.length>=3?medianOf(rec):P.L;
+  const ses=Math.max(1,Math.ceil(left/Math.max(5,per)));
+  if(runs.length<2)return {left,ready:false,have:runs.length};
   const days=Math.max(1,Math.round(ses*P.cadence));
-  return {left,ready:true,ses,days,per,cadence:P.cadence,runs:runs.length,
-    rough:runs.length<8,when:addDays(today(),days)};
+  return {left,ready:true,ses,days,per:Math.round(per),cadence:P.cadence,
+    rough:runs.length<5,when:addDays(today(),days)};
 }
 function etaText(e){
   if(!e)return '';
-  if(!e.ready)return e.have<3
-    ? `Срок появится, когда наберётся ${3-e.have} ${plural(3-e.have,'пробежка','пробежки','пробежек')}: пока не из чего считать, как часто ты бегаешь.`
-    : 'Срок появится, когда пройдёт первая полная неделя — тогда станет видно, с какой частотой ты бегаешь.';
-  return `${e.ses} ${plural(e.ses,'пробежка','пробежки','пробежек')} по ${km(e.per)} км — это около ${e.days} ${plural(e.days,'дня','дней','дней')}, к ${fmtDate(e.when)}`;
+  if(!e.ready)return 'Откроется после первых пробежек — тогда станет видно, как часто ты бегаешь.';
+  return `${e.ses} ${plural(e.ses,'занятие','занятия','занятий')} по ${km(e.per)} мин — это около ${e.days} ${plural(e.days,'дня','дней','дней')}, к ${fmtDate(e.when)}`;
 }
 function etaBasis(e){
   if(!e||!e.ready)return '';
-  return `Считаю по твоим ${km(e.per)} км за пробежку и ${km(e.cadence)} ${plural(Math.round(e.cadence),'дню','дням','дням')} между ними.`
-    +(e.rough?' Прогноз пока грубый — с каждой неделей будет точнее.':'');
+  return `Считаю по твоим ${km(e.per)} мин бега за занятие и ${km(e.cadence)} ${plural(Math.round(e.cadence),'дню','дням','дням')} между ними.`
+    +(e.rough?' Прогноз пока грубый — с каждой пробежкой будет точнее.':'');
 }
 function routeStrip(st,P){
-  const R=routeInfo(st.total);
+  const R=routeInfo(st.totalMin);
   const eta=P?routeEta(st,P):null;
   if(!R.next)return `<div class="card"><div class="lbl">Путь</div>
-    <div style="margin-top:8px"><b>Весь маршрут пройден</b><div class="hint">${km(st.total)} км — весь Карельский перешеек по кругу.</div></div></div>`;
+    <div style="margin-top:8px"><b>Весь маршрут пройден</b><div class="hint">${km(st.totalMin)} мин бега — весь Карельский перешеек по кругу.</div></div></div>`;
   return `<button class="card" style="display:block;width:100%;text-align:left" onclick="S.tab='route';save();render()">
     <div style="display:flex;justify-content:space-between;align-items:baseline">
       <div class="lbl">Путь · ${ROUTES[R.next.ri].name}</div>
-      <div style="font-size:13px;color:var(--mut)">${km(st.total)} км</div>
+      <div style="font-size:13px;color:var(--mut)">${km(st.totalMin)} мин</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:650">${R.next.c} — через ${km(R.next.abs-st.total)} км</div>
+        <div style="font-weight:650">${R.next.c} — через ${km(R.next.m-st.totalMin)} мин бега</div>
         <div class="bar" style="height:6px;margin-top:8px"><i style="width:${R.p*100}%;background:var(--acc)"></i></div>
       </div>
       <div style="font-size:22px">📍</div>
     </div>
-    ${eta?`<div class="hint" style="margin-top:9px">${etaText(eta)}${eta.ready?'.':''}</div>`:R.last?`<div class="hint" style="margin-top:9px">Последняя отметка: ${R.last.c}, ${km(R.last.abs)} км</div>`:
-      `<div class="hint" style="margin-top:9px">Старт — северная окраина города. Впереди ${ROUTE_TOTAL} км по Карельскому перешейку.</div>`}
+    ${eta?`<div class="hint" style="margin-top:9px">${etaText(eta)}${eta.ready?'.':''}</div>`:R.last?`<div class="hint" style="margin-top:9px">Последняя отметка: ${R.last.c}, ${km(R.last.m)} мин</div>`:
+      `<div class="hint" style="margin-top:9px">Старт — Петербург. Первое место откроется через ${STOPS[0].m} мин бега.</div>`}
   </button>`;
 }
 function vRoute(P,st){
-  const R=routeInfo(st.total);
+  const R=routeInfo(st.totalMin);
   const eta=routeEta(st,P);
   const A=awardState(st),got=A.filter(a=>a.got).length;
   const r=ROUTES[0];
   const locked=STOPS.length-R.passed.length-(R.next?1:0);
-  return `<div class="top"><div><h1>Путь</h1><div class="sub">${km(st.total)} из ${ROUTE_TOTAL} км · ${R.passed.length} ${plural(R.passed.length,'место','места','мест')} позади</div></div></div>
+  return `<div class="top"><div><h1>Путь</h1><div class="sub">${km(st.totalMin)} из ${ROUTE_TOTAL} мин бега · ${R.passed.length} ${plural(R.passed.length,'место','места','мест')} позади</div></div></div>
   <div class="card">
     <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:18px">${r.ic}</span>
       <div style="flex:1"><b>${r.name}</b><div class="hint">${r.sub}</div></div></div>
-    <div class="bar" style="height:6px;margin-top:12px"><i style="width:${Math.min(100,st.total/ROUTE_TOTAL*100)}%;background:var(--acc)"></i></div>
-    ${routeMap(st.total, Math.min(528, innerWidth-32))}
-    <div class="hint" style="margin-top:8px">Дорога открывается по мере бега: что впереди — видно только на шаг вперёд. Карта показывает, где ты сейчас и мимо чего бежишь; чтобы увидеть больше, открой её во весь экран. Маршрут настоящий пеший, по дорогам и тропам OpenStreetMap.</div>
+    <div class="bar" style="height:6px;margin-top:12px"><i style="width:${Math.min(100,st.totalMin/ROUTE_TOTAL*100)}%;background:var(--acc)"></i></div>
+    ${routeMap(st.totalMin, Math.min(528, innerWidth-32))}
+    <div class="hint" style="margin-top:8px">Места открываются за минуты бега, а не за километры: так каждое занятие продвигает заметно. Дорога настоящая — пеший маршрут по OpenStreetMap длиной ${ROUTE_KM} км, — но идёшь ты по ней временем, как по страницам. Карта показывает, где ты сейчас; во весь экран видно больше.</div>
   </div>
   <div class="card">
     <div style="margin-top:2px">
     ${R.passed.length?R.passed.map((s,i)=>stopRow(s,true,false,i<R.passed.length-1||!!R.next)).join(''):
       `<div class="hint" style="padding:6px 0 10px">Пока ни одного места. Первое — ${STOPS[0].c}, через ${km(STOPS[0].abs)} км.</div>`}
-    ${R.next?stopRow(R.next,false,true,locked>0,st.total,eta):''}
+    ${R.next?stopRow(R.next,false,true,locked>0,st.totalMin,eta):''}
     ${locked>0?`<div style="display:flex;gap:12px">
       <div style="width:12px;flex:none;display:flex;justify-content:center">
         <div style="width:11px;height:11px;border-radius:50%;margin-top:4px;background:var(--line)"></div></div>
       <div style="flex:1;color:var(--mut);font-size:13px;padding-top:1px">
-        Дальше ещё ${locked} ${plural(locked,'место','места','мест')} и ${km(ROUTE_TOTAL-(R.next?R.next.abs:0))} км. Что там — узнаешь, когда добежишь.</div>
+        Дальше ещё ${locked} ${plural(locked,'место','места','мест')} и ${km(ROUTE_TOTAL-(R.next?R.next.m:0))} мин бега. Что там — узнаешь, когда добежишь.</div>
     </div>`:''}
     </div>
   </div>
@@ -1069,8 +1081,8 @@ function mapTiles(v,W,H){
 function mapSvg(v,W,H,total,tap){
   const [left,top]=mapOrigin(v,W,H);
   const px=(lat,lon)=>{const m=merc(lat,lon,v.z);return [m[0]-left, m[1]-top]};
-  const cut=pointAt(total), me=[cut[0],cut[1]];
-  const next=STOPS.find(s=>total<s.abs);
+  const cut=pointAt(kmForMinutes(total)), me=[cut[0],cut[1]];
+  const next=STOPS.find(s=>total<s.m);
   const line=a=>a.map(p=>{const q=px(p[0],p[1]);return q[0].toFixed(1)+','+q[1].toFixed(1)}).join(' ');
   const seen=ROUTE_PTS.slice(0,cut[2]).concat([me]);
   const mp=px(me[0],me[1]);
@@ -1084,7 +1096,7 @@ function mapSvg(v,W,H,total,tap){
     ${STOPS.map((st,i)=>{
       const q=px(st.ll[0],st.ll[1]);
       if(q[0]<-30||q[0]>W+30||q[1]<-30||q[1]>H+30)return '';
-      const done=total>=st.abs, isNext=next&&next.abs===st.abs;
+      const done=total>=st.m, isNext=next&&next.m===st.m;
       const r=done?4.5:(isNext?6:3.5);
       const fill=done?'var(--acc)':'#0B0D10';
       const stroke=done?'#0B0D10':(isNext?'var(--acc)':'#8A94A2');
@@ -1102,19 +1114,19 @@ function mapSvg(v,W,H,total,tap){
    850 км не разглядеть ничего. */
 function routeMap(total,width){
   const W=Math.max(280,Math.min(560,width||340)), H=300;
-  const next=STOPS.find(s=>total<s.abs);
-  const cut=pointAt(total);
+  const next=STOPS.find(s=>total<s.m);
+  const cut=pointAt(kmForMinutes(total));
   // Крупный план вокруг текущей точки: важнее видеть, по какой улице бежишь,
   // чем весь участок до следующего места целиком.
   const v={lat:cut[0],lon:cut[1],z:15};
-  const left_km=next?next.abs-total:0;
+  const left_min=next?next.m-total:0;
   return `<button id="mapCard" style="display:block;position:relative;width:100%;max-width:${W}px;height:${H}px;
       margin:12px auto 0;border-radius:14px;overflow:hidden;background:#12161c;border:1px solid var(--line);padding:0">
     <div style="position:absolute;inset:0;filter:brightness(.62) saturate(.62) contrast(1.02)">${mapTiles(v,W,H)}</div>
     ${mapSvg(v,W,H,total,false)}
     ${next?`<div style="position:absolute;left:8px;top:8px;background:rgba(11,13,16,.78);
       border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:12.5px">
-      <b>${next.c}</b> <span style="color:var(--mut)">· ещё ${km(left_km)} км</span></div>`:''}
+      <b>${next.c}</b> <span style="color:var(--mut)">· ещё ${km(left_min)} мин</span></div>`:''}
     <div style="position:absolute;right:8px;top:8px;background:rgba(11,13,16,.78);border:1px solid var(--line);
       border-radius:10px;padding:6px 9px;font-size:12px;color:var(--mut)">во весь экран ⤢</div>
     <div style="position:absolute;right:5px;bottom:4px;font-size:8.5px;color:#6b7480;
@@ -1128,7 +1140,7 @@ function routeMap(total,width){
 let mapView=null, mapTotal=0;
 function openFullMap(total){
   mapTotal=total;
-  const cut=pointAt(total);
+  const cut=pointAt(kmForMinutes(total));
   mapView={lat:cut[0],lon:cut[1],z:15};   // открываем там же, где человек сейчас
   const el=document.getElementById('fullmap');
   el.style.display='block';
@@ -1146,7 +1158,7 @@ function drawFullMap(){
     <div style="position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 10px) 12px 10px;
       display:flex;gap:8px;align-items:center;pointer-events:none">
       <div style="background:rgba(11,13,16,.82);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px">
-        ${km(mapTotal)} из ${ROUTE_TOTAL} км</div>
+        ${km(mapTotal)} из ${ROUTE_TOTAL} мин бега</div>
       <button id="mapClose" style="margin-left:auto;pointer-events:auto;background:rgba(11,13,16,.82);
         border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:13px">Закрыть</button>
     </div>
@@ -1166,12 +1178,12 @@ function drawFullMap(){
 }
 function showStop(i){
   const st=STOPS[i], box=document.getElementById('mapInfo');
-  const done=mapTotal>=st.abs;
+  const done=mapTotal>=st.m;
   box.style.display='block';
   box.innerHTML=`<div style="display:flex;gap:10px;align-items:baseline">
       <b style="flex:1">${st.c}</b>
-      <span style="color:var(--mut);font-size:13px">${km(st.abs)} км</span></div>
-    <div class="hint" style="margin-top:6px">${done?st.f:`Ещё ${km(st.abs-mapTotal)} км — и место откроется.`}</div>
+      <span style="color:var(--mut);font-size:13px">${km(st.m)} мин</span></div>
+    <div class="hint" style="margin-top:6px">${done?st.f:`Ещё ${km(st.m-mapTotal)} мин бега — и место откроется.`}</div>
     <button class="btn gh sm" style="margin-top:10px" onclick="document.getElementById('mapInfo').style.display='none'">Понятно</button>`;
 }
 function bindFullMap(){
@@ -1262,10 +1274,10 @@ function stopRow(s,done,isNext,line,total,eta){
     <div style="flex:1;min-width:0;padding-bottom:${line?'16px':'2px'}">
       <div style="display:flex;justify-content:space-between;gap:8px">
         <b style="font-weight:${done?'650':'600'}">${s.c}</b>
-        <span style="font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;flex:none">${km(s.abs)} км</span>
+        <span style="font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;flex:none">${km(s.m)} мин</span>
       </div>
       ${done?`<div class="hint" style="margin-top:5px">${s.f}</div>`
-            :`<div class="hint" style="margin-top:5px;color:var(--acc)">Ещё ${km(s.abs-total)} км — и место откроется.</div>
+            :`<div class="hint" style="margin-top:5px;color:var(--acc)">Ещё ${km(s.m-total)} мин бега — и место откроется.</div>
                ${eta?`<div class="hint" style="margin-top:3px">${etaText(eta)}${eta.ready?'.':''}</div>
                  ${eta&&eta.ready?`<div class="hint" style="margin-top:3px;opacity:.75">${etaBasis(eta)}</div>`:''}`:''}`}
     </div></div>`;
