@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Разбег">
+<meta name="apple-mobile-web-app-title" content="Аюми">
 <meta name="theme-color" content="#0B0D10">
-<title>Разбег</title>
+<title>Аюми</title>
 <style>
 :root{
   --bg:#0B0D10;
@@ -193,7 +193,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
 
 <script>
 /* ==================== хранилище ==================== */
-const KEY='razbeg.v1';
+const KEY='ayumi.v1';
 let S=load();
 function load(){
   try{const r=JSON.parse(localStorage.getItem(KEY));
@@ -1242,7 +1242,8 @@ function parseCSV(text){
    Поэтому единственный надёжный способ видеть одни и те же данные везде —
    держать их в облаке: забираем при каждом открытии, отправляем после любого
    изменения. Токен живёт только в localStorage, в репозитории его нет. */
-const SKEY='razbeg.sync';
+const SKEY='ayumi.sync';
+const GFILE='ayumi.json',GOLD='razbeg.json';   // старое имя файла в гисте тоже понимаем
 function syncCfg(){try{return JSON.parse(localStorage.getItem(SKEY))||{}}catch(e){return {}}}
 function syncSave(c){localStorage.setItem(SKEY,JSON.stringify(c))}
 function syncOn(){const c=syncCfg();return !!(c.gist&&c.token)}
@@ -1273,7 +1274,7 @@ async function syncPull(quiet){
   syncBusy=true;
   try{
     const g=await gistCall('GET');
-    const f=g.files&&g.files['razbeg.json'];
+    const f=g.files&&(g.files[GFILE]||g.files[GOLD]);
     if(!f)return false;
     const raw=f.truncated?await (await fetch(f.raw_url)).text():f.content;
     const rem=JSON.parse(raw||'{}');
@@ -1294,7 +1295,9 @@ async function syncPush(quiet){
   if(!syncOn())return false;
   try{
     S.updated=Date.now();
-    await gistCall('PATCH',{files:{'razbeg.json':{content:JSON.stringify(
+    const g=await gistCall('GET');
+    const name=(g.files&&g.files[GOLD]&&!g.files[GFILE])?GOLD:GFILE;   // не плодим второй файл
+    await gistCall('PATCH',{files:{[name]:{content:JSON.stringify(
       {runs:S.runs,seen:S.seen,updated:S.updated},null,1)}}});
     S.syncedAt=Date.now();save();
     if(!quiet)toast('Отправлено');
@@ -1368,15 +1371,15 @@ async function syncConnect(){
       if(!r.ok)return syMsg('GitHub ответил '+r.status,true);
       const list=await r.json();
       if(!list.length)break;
-      gist=list.find(g=>g.files&&g.files['razbeg.json']);
+      gist=list.find(g=>g.files&&(g.files[GFILE]||g.files[GOLD]));
     }
     // 3. нет — заводим новый, приватный
     if(!gist){
       syMsg('Гиста нет, создаю…');
       const r=await fetch('https://api.github.com/gists',{
         method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'},
-        body:JSON.stringify({description:'Разбег — данные пробежек',public:false,
-          files:{'razbeg.json':{content:JSON.stringify({runs:[],seen:[],updated:0},null,1)}}})});
+        body:JSON.stringify({description:'Аюми — данные пробежек',public:false,
+          files:{[GFILE]:{content:JSON.stringify({runs:[],seen:[],updated:0},null,1)}}})});
       if(!r.ok)return syMsg('Не смог создать гист: GitHub ответил '+r.status,true);
       gist=await r.json();
     }
@@ -1393,7 +1396,7 @@ function syncForget(){localStorage.removeItem(SKEY);closeSheet();render();toast(
 /* ---------- json ---------- */
 function exportJSON(){
   const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='razbeg-'+iso(today())+'.json';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ayumi-'+iso(today())+'.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
 function importJSON(){
