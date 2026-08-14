@@ -28,9 +28,11 @@ html,body{margin:0;padding:0}
 /* Каркас приложения: сама страница не прокручивается, прокручивается только
    середина. Так нижняя панель перестаёт быть плавающей и на iOS не прыгает —
    position:fixed там переставляется лишь по окончании инерции прокрутки. */
-html{height:100%}
+html{height:100%;touch-action:manipulation}
 body{
-  height:100%;height:100dvh;
+  /* Не высота, а привязка к краям экрана: 100dvh на iOS в приложении с
+     рабочего стола бывает больше видимой области, и низ уезжает. */
+  position:fixed;inset:0;
   display:flex;flex-direction:column;overflow:hidden;
   padding-top:env(safe-area-inset-top);
   background:var(--bg);color:var(--tx);
@@ -213,7 +215,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 4';
+const APP_VERSION='Аюми 5';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
