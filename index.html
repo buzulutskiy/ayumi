@@ -259,7 +259,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 24';
+const APP_VERSION='Аюми 26';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -423,7 +423,10 @@ const ROUTE_TOTAL=STOPS[STOPS.length-1].abs;
    прошлого опыта: сколько получилось в прошлый раз и как это далось.
    Тип чередуется — интервалы, потом непрерывный бег, и снова интервалы. */
 function T_(work,rest,reps,restType){return {work,rest:reps>1?rest:0,reps,restType:restType||'walk'}}
-const WARM=5,COOL=5,WALK_PACE=9;   // разминка, заминка и темп шага, мин/км
+/* Разминки и заминки в плане нет намеренно: до места человек доходит пешком,
+   это время каждый раз разное и всё равно не фиксируется. Считаем только то,
+   что реально ставится на часы, — работу и отдых. */
+const WALK_PACE=9;                 // темп шага, мин/км — нужен для оценки километров
 const REST_NAME={walk:'шагом',jog:'трусцой'};
 const L0=22;                       // минут бега в первом занятии
 const CONT=0.85;                   // непрерывный бег тяжелее интервалов при том же времени
@@ -439,10 +442,10 @@ const RPEK=v=>(RPE.find(x=>x.v===v)||{k:1.03}).k;
 
 function runMin(t){return Math.round(t.work*t.reps*10)/10}
 function restMin(t){return Math.round(t.rest*(t.reps-1)*10)/10}
-function allMin(t){return Math.round((WARM+COOL+runMin(t)+restMin(t))*10)/10}
+function allMin(t){return Math.round((runMin(t)+restMin(t))*10)/10}
 function estKm(t,pace){
   const rest=t.restType==='jog'?restMin(t)/(pace*1.1):restMin(t)/WALK_PACE;
-  return Math.round((runMin(t)/(t.restType==='jog'?pace*.9:pace)+rest+(WARM+COOL)/WALK_PACE)*10)/10;
+  return Math.round((runMin(t)/(t.restType==='jog'?pace*.9:pace)+rest)*10)/10;
 }
 function clock(m){const w=Math.floor(m),s=Math.round((m-w)*60);return `${w}:${String(s).padStart(2,'0')}`}
 function mins(m){return km(m)+' мин'}
@@ -499,10 +502,12 @@ function makeSession(t,pace,kind,extra){
 }
 /* Строки ровно под поля интервального таймера на часах */
 function watchRows(t,pace,known){
-  const rows=[['Разминка',`${WARM} мин шагом`],['Работа',clock(t.work)]];
-  if(t.reps>1)rows.push(['Отдых',`${clock(t.rest)} ${REST_NAME[t.restType]}`]);
-  rows.push(['Повторов',String(t.reps)]);
-  rows.push(['Заминка',`${COOL} мин шагом`]);
+  const rows=[['Работа',clock(t.work)]];
+  if(t.reps>1){
+    rows.push(['Отдых',`${clock(t.rest)} ${REST_NAME[t.restType]}`]);
+    rows.push(['Повторов',String(t.reps)]);
+    rows.push(['Из них бега',mins(runMin(t))]);
+  }
   if(pace)rows.push(['Темп',known?`${pace2(pace*0.94)}–${pace2(pace*1.12)} /км`:'разговорный']);
   return rows;
 }
@@ -538,7 +543,7 @@ function cadenceDays(){
 function kmPerSession(pace,L){
   const R=sortedRuns().filter(r=>r.dist>0).slice(-6);
   if(R.length>=3){const d=R.map(r=>r.dist).sort((a,b)=>a-b);return d[Math.floor(d.length/2)]}
-  return Math.max(1.5,Math.round((L/pace+(WARM+COOL)/WALK_PACE)*10)/10);
+  return Math.max(1.5,Math.round((L/pace)*10)/10);
 }
 function easyPace(){
   const R=S.runs.filter(r=>r.min>0&&r.dist>=1).slice(-10);
@@ -679,7 +684,7 @@ function render(){
 function heroSession(x,P,alt){
   return `<div class="hero"><div class="glow"></div>
     <span class="type ${x.kind==='int'?'blue':''}">${x.title}</span>
-    <div class="big">${km(x.runMin)} <span>мин бега</span></div>
+    <div class="big">${km(x.allMin)} <span>мин на всё</span></div>
     <div class="det">${x.plan}</div>
     <div class="watch">
       <div class="lbl" style="margin-bottom:7px">На часы</div>
@@ -698,7 +703,7 @@ function vToday(P,st){
       <span class="type">Сделано сегодня</span>
       <div class="big">${km(doneToday.min||0)} <span>мин</span></div>
       <div class="det">${km(doneToday.dist)} км${doneToday.min?', '+pace(doneToday.min,doneToday.dist)+' /км':''}${doneToday.rpe?' · '+RPE.find(r=>r.v===doneToday.rpe).t.toLowerCase():''}</div>
-      <div class="why">Следующее занятие — ${x.title.toLowerCase()}, ${mins(x.runMin)} бега. Отдохни день-другой.</div></div>`;
+      <div class="why">Следующее занятие — ${x.title.toLowerCase()}, ${mins(x.allMin)}. Отдохни день-другой.</div></div>`;
   } else head=heroSession(x,P,!!P.last);
 
   return `
@@ -1349,7 +1354,7 @@ function openAbout(){
     </div>
     <div class="card" style="margin-top:14px">
       <div class="lbl">Как читать занятие</div>
-      <div class="hint" style="margin-top:8px">Разминку и заминку отсчитываешь сам — в интервальный таймер часов идут только работа, отдых и повторы. Темп в таблице считается по твоим же пробежкам: если на бегу можешь сказать фразу из пяти слов и не задохнуться, темп верный.</div>
+      <div class="hint" style="margin-top:8px">В плане нет разминки и заминки: до места ты доходишь пешком, это время каждый раз разное и всё равно не записывается. Считается только то, что ставится на часы, — работа, отдых и повторы. Темп в таблице берётся из твоих же пробежек: если на бегу можешь сказать фразу из пяти слов и не задохнуться, темп верный.</div>
     </div>
     <div class="card">
       <div class="lbl">Почему нет расписания</div>
@@ -1396,7 +1401,7 @@ function setRpe(id,v){
   const r=S.runs.find(x=>x.id===id);if(!r)return;
   r.rpe=v;if(!r.kind)r.kind=pendingKind||'int';
   pendingKind=null;touch();closeSheet();render();
-  toast('Следующее занятие: '+mins(plan().next.runMin)+' бега');
+  toast('Следующее занятие: '+mins(plan().next.allMin));
 }
 function setKind(id,k){const r=S.runs.find(x=>x.id===id);if(r){r.kind=k;touch();askRpe(id)}}
 let pendingKind=null;
