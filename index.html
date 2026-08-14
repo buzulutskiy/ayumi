@@ -222,7 +222,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 13';
+const APP_VERSION='Аюми 14';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -960,8 +960,8 @@ function routeMap(total,width){
   if(seg.length<2)seg.push(to);
   const lats=seg.map(p=>p[0]),lons=seg.map(p=>p[1]);
   const bb=[Math.min(...lats),Math.min(...lons),Math.max(...lats),Math.max(...lons)];
-  let z=17;
-  for(;z>4;z--){
+  let z=14;                       // ближе не подходим: нужен контекст вокруг
+  for(;z>8;z--){
     const p1=merc(bb[2],bb[1],z),p2=merc(bb[0],bb[3],z);
     if(p2[0]-p1[0]<=W-PAD*2 && p2[1]-p1[1]<=H-PAD*2) break;
   }
@@ -978,7 +978,9 @@ function routeMap(total,width){
     const n=Math.pow(2,z);
     if(y<0||y>=n)continue;
     const url=TILE.replace('{z}',z).replace('{x}',((x%n)+n)%n).replace('{y}',y).replace('{r}',r);
-    tiles+=`<img src="${url}" width="256" height="256" loading="lazy" alt=""
+    // без ленивой загрузки: плиток единицы, а внутри прокручиваемого блока
+    // она срабатывает через раз и карта остаётся пустой
+    tiles+=`<img src="${url}" width="256" height="256" alt="" onerror="this.style.display='none'"
       style="position:absolute;left:${x*256-left}px;top:${y*256-top}px">`;
   }
   const line=a=>a.map(p=>{const q=px(p[0],p[1]);return q[0].toFixed(1)+','+q[1].toFixed(1)}).join(' ');
