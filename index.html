@@ -155,11 +155,15 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    отрывается от низа экрана. Сплошной фон плюс собственный слой через
    translateZ решают это насовсем. */
 .tabbar{flex:none;background:var(--bg);border-top:1px solid var(--line);
-  padding:6px 0 10px;                                   /* запасной вариант, если env() не понят */
-  padding-bottom:max(10px, env(safe-area-inset-bottom))}
+  position:relative;
+  padding:6px 10px 8px;                                 /* запасной вариант, если env() не понят */
+  padding-bottom:max(8px, calc(env(safe-area-inset-bottom) * .45))}
+/* Страховка: закрывает полосу под панелью, если система оставляет запас.
+   Тот же приём, что в «Кэйко», — иначе панель выглядит приподнятой. */
+.tabbar::after{content:"";position:absolute;left:0;right:0;top:100%;height:80px;background:var(--bg)}
 .tabbar .in{max-width:560px;margin:0 auto;display:flex}
-.tb{flex:1;text-align:center;color:var(--mut);font-size:10.5px;font-weight:600;padding:2px 0}
-.tb .i{display:block;font-size:19px;line-height:1.25;filter:grayscale(1);opacity:.55}
+.tb{flex:1;text-align:center;color:var(--mut);font-size:10.9px;font-weight:700;padding:3px 0;line-height:1.2}
+.tb .i{display:block;font-size:18.4px;line-height:1.15;margin-bottom:2px;filter:grayscale(1);opacity:.55}
 .tb.on{color:var(--acc)}
 .tb.on .i{filter:none;opacity:1}
 
@@ -218,7 +222,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 7';
+const APP_VERSION='Аюми 8';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
