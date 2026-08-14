@@ -156,7 +156,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    translateZ решают это насовсем. */
 .tabbar{flex:none;background:var(--bg);border-top:1px solid var(--line);
   padding:6px 0 10px;                                   /* запасной вариант, если env() не понят */
-  padding-bottom:max(10px, calc(env(safe-area-inset-bottom) * .45))}
+  padding-bottom:max(10px, env(safe-area-inset-bottom))}
 .tabbar .in{max-width:560px;margin:0 auto;display:flex}
 .tb{flex:1;text-align:center;color:var(--mut);font-size:10.5px;font-weight:600;padding:2px 0}
 .tb .i{display:block;font-size:19px;line-height:1.25;filter:grayscale(1);opacity:.55}
@@ -197,6 +197,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
 </head>
 <body>
 
+<div id="probe" style="position:fixed;left:-9999px;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px)"></div>
 <div id="banner"></div>
 <div id="app" class="wrap"></div>
 
@@ -217,7 +218,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 6';
+const APP_VERSION='Аюми 7';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -601,6 +602,7 @@ function render(){
   document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
   const v={today:vToday,plan:vSessions,stats:vStats,route:vRoute,more:vMore}[S.tab]||vToday;
   app.innerHTML=v(P,st);
+  fillProbe();
   app.scrollTop=0;
   checkNew(st);
 }
@@ -654,6 +656,25 @@ function vToday(P,st){
     <div class="st"><div class="v">${st.count}</div><div class="k">занятий сделано</div></div>
     <div class="st"><div class="v">${runnerIndex().score||'—'}</div><div class="k">индекс бегуна</div></div>
   </div>`;
+}
+/* Диагностика нижней панели: без реальных чисел с устройства это гадание. */
+function fillProbe(){
+  const out=document.getElementById('probeOut');
+  if(!out)return;
+  const bar=document.querySelector('.tabbar').getBoundingClientRect();
+  const inset=document.getElementById('probe').offsetHeight;
+  const vv=window.visualViewport;
+  const standalone=(window.navigator.standalone===true)||matchMedia('(display-mode: standalone)').matches;
+  out.innerHTML=[
+    ['с рабочего стола',standalone?'да':'нет, это Safari'],
+    ['safe-area снизу',inset+' px'],
+    ['окно',innerHeight+' px'],
+    ['видимая часть',vv?Math.round(vv.height)+' px':'—'],
+    ['экран',screen.height+' px'],
+    ['низ панели',Math.round(bar.bottom)+' px'],
+    ['зазор под панелью',Math.round(innerHeight-bar.bottom)+' px'],
+    ['высота панели',Math.round(bar.height)+' px'],
+  ].map(([k,v])=>`${k}: <b style="color:var(--tx)">${v}</b>`).join('<br>');
 }
 function greet(){const h=new Date().getHours();return h<5?'Ночь':h<11?'Утро':h<17?'День':h<23?'Вечер':'Ночь'}
 /* Не ответил, как далось прошлое занятие — спрашиваем ещё раз, от этого зависит следующее */
@@ -960,6 +981,11 @@ function vMore(P,st){
       Расписания нет: ни недель, ни дней. Есть одно следующее занятие, и оно собирается заново каждый раз, когда ты загружаешь пробежку и отвечаешь, как она далась.
       Типы чередуются — интервалы, потом непрерывный бег. Пропустил неделю, две, месяц — ничего не сгорело, уровень просто мягко откатится.
     </div>
+  </div>
+  <div class="card">
+    <div class="lbl">Замер экрана</div>
+    <div class="hint" style="margin-top:8px;font-variant-numeric:tabular-nums;line-height:1.8" id="probeOut">—</div>
+    <div class="hint" style="margin-top:8px;font-size:12px">Это диагностика нижней панели. Пришли скриншот этой карточки — по числам станет видно, что именно съедает место.</div>
   </div>
   <div class="card">
     <div class="lbl">Версия</div>
