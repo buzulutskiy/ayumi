@@ -259,7 +259,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 23';
+const APP_VERSION='Аюми 24';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -425,7 +425,8 @@ const ROUTE_TOTAL=STOPS[STOPS.length-1].abs;
 function T_(work,rest,reps,restType){return {work,rest:reps>1?rest:0,reps,restType:restType||'walk'}}
 const WARM=5,COOL=5,WALK_PACE=9;   // разминка, заминка и темп шага, мин/км
 const REST_NAME={walk:'шагом',jog:'трусцой'};
-const L0=8;                        // минут бега в первом занятии
+const L0=22;                       // минут бега в первом занятии
+const CONT=0.85;                   // непрерывный бег тяжелее интервалов при том же времени
 
 /* Как далось занятие — единственный вопрос, который приложение задаёт. */
 const RPE=[
@@ -475,7 +476,7 @@ function nextKind(){
 const INT_TABLE=[[10,1,1.5],[13,1.5,1.5],[16,2,1.5],[20,3,1.5],[25,4,1.5],[32,5,2],[45,6,2],[999,8,2]];
 function buildSession(L,kind,pace){
   if(kind==='cont'){
-    const work=Math.max(5,Math.round(L*0.75));
+    const work=Math.max(5,Math.round(L*CONT));
     return makeSession(T_(work,0,1),pace,'cont',{
       title:'Непрерывный бег',
       goal:`Пробежать ${mins(work)} и ни разу не перейти на шаг. Скорость не важна.`});
@@ -487,22 +488,25 @@ function buildSession(L,kind,pace){
     title:'Интервалы',
     goal:`Отбежать все ${reps} ${plural(reps,'отрезок','отрезка','отрезков')} целиком. Последний не медленнее первого.`});
 }
+const paceKnownNow=()=>!!easyPace();
 function makeSession(t,pace,kind,extra){
   return Object.assign({t,kind,type:kind==='int'?'intervals':'long',
     work:t.work,rest:t.rest,reps:t.reps,
     runMin:runMin(t),allMin:allMin(t),dist:estKm(t,pace),
     plan:t.reps>1?`${t.reps} × ${mins(t.work)} бегом через ${mins(t.rest)} ${REST_NAME[t.restType]}`
                  :`${mins(t.work)} бегом без перерыва`,
-    watch:watchRows(t)},extra||{});
+    watch:watchRows(t,pace,paceKnownNow())},extra||{});
 }
 /* Строки ровно под поля интервального таймера на часах */
-function watchRows(t){
+function watchRows(t,pace,known){
   const rows=[['Разминка',`${WARM} мин шагом`],['Работа',clock(t.work)]];
   if(t.reps>1)rows.push(['Отдых',`${clock(t.rest)} ${REST_NAME[t.restType]}`]);
   rows.push(['Повторов',String(t.reps)]);
   rows.push(['Заминка',`${COOL} мин шагом`]);
+  if(pace)rows.push(['Темп',known?`${pace2(pace*0.94)}–${pace2(pace*1.12)} /км`:'разговорный']);
   return rows;
 }
+const pace2=(p)=>pace(p,1);
 
 /* Всё состояние приложения в одном месте. */
 function plan(){
@@ -673,9 +677,6 @@ function render(){
 
 /* ---------- ЗАНЯТИЕ ---------- */
 function heroSession(x,P,alt){
-  const band=P.paceKnown
-    ? `${pace(P.pace*0.94,1)}–${pace(P.pace*1.12,1)} /км — твой обычный лёгкий темп по загруженным пробежкам.`
-    : 'медленнее, чем кажется правильным.';
   return `<div class="hero"><div class="glow"></div>
     <span class="type ${x.kind==='int'?'blue':''}">${x.title}</span>
     <div class="big">${km(x.runMin)} <span>мин бега</span></div>
@@ -683,14 +684,11 @@ function heroSession(x,P,alt){
     <div class="watch">
       <div class="lbl" style="margin-bottom:7px">На часы</div>
       ${x.watch.map(([k,v])=>`<div class="wl"><span>${k}</span><b>${v}</b></div>`).join('')}
-      <div class="hint" style="margin-top:9px;font-size:12px">Разминку и заминку отсчитываешь сам, в интервальный таймер идут только работа, отдых и повторы.</div>
     </div>
-    <div class="why"><b style="font-weight:600;color:var(--tx)">Темп:</b> ${band} Проверка простая — на бегу можешь сказать фразу из пяти слов и не задохнуться. Не можешь — сбавь, это не ошибка.</div>
     <div class="why"><b style="font-weight:600;color:var(--tx)">Цель:</b> ${x.goal}</div>
-    <div class="why">Около ${km(x.allMin)} мин на ногах вместе с разминкой, примерно ${km(x.dist)} км.
-      ${alt?`<br>В прошлый раз были ${P.last&&P.last.kind==='int'?'интервалы':'непрерывный бег'} — сегодня чередуем.`:''}</div>
   </div>`;
 }
+
 function vToday(P,st){
   const doneToday=S.runs.find(r=>r.date===iso(today()));
   const x=P.next;
@@ -712,8 +710,7 @@ function vToday(P,st){
     <div class="hint" style="margin-top:6px">У приложения с рабочего стола своё хранилище, отдельное от Safari — загруженное в браузере сюда не попадёт. Подключи облако, и данные будут везде одни.</div>
   </button>`:''}
   ${head}
-  <button class="btn" onclick="pickRuns()">Загрузить пробежку из файла</button>
-  <div class="hint" style="text-align:center;margin:8px 0 14px">Любой файл из приложения часов — tcx, gpx, csv, json или zip.</div>
+  <button class="btn" style="margin-bottom:14px" onclick="pickRuns()">Загрузить пробежку из файла</button>
   ${routeStrip(st,P)}
   <div class="grid">
     <div class="st"><div class="v">${km(P.L)}</div><div class="k">мин — твой уровень</div></div>
@@ -1351,6 +1348,10 @@ function openAbout(){
       там уходят вглубь одного дела, здесь — идут дальше от того места, где начали.
     </div>
     <div class="card" style="margin-top:14px">
+      <div class="lbl">Как читать занятие</div>
+      <div class="hint" style="margin-top:8px">Разминку и заминку отсчитываешь сам — в интервальный таймер часов идут только работа, отдых и повторы. Темп в таблице считается по твоим же пробежкам: если на бегу можешь сказать фразу из пяти слов и не задохнуться, темп верный.</div>
+    </div>
+    <div class="card">
       <div class="lbl">Почему нет расписания</div>
       <div class="hint" style="margin-top:8px">Планы на недели вперёд ломаются о первую же пропущенную тренировку, и дальше человек чувствует себя должником. Здесь есть только одно следующее занятие — оно собирается заново после каждой пробежки, а пропуск ничего не портит.</div>
     </div>
