@@ -13,6 +13,8 @@
 <title>Аюми</title>
 <style>
 :root{
+  --acc-2:#a8e83a;
+  --dim:#5c6672;
   --bg:#0B0D10;
   --card:#14181E;
   --card2:#1B2027;
@@ -51,6 +53,26 @@ h1{font-size:28px}
 h2{font-size:19px}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 input,select{font:inherit;color:inherit}
+
+/* Шапка — та же, что в «Кэйко»: имя открывает философию, точка показывает
+   состояние облака, шестерёнка ведёт в настройки. */
+header{display:flex;align-items:center;gap:10px;padding:12px 16px 10px;flex:none;max-width:560px;
+  margin:0 auto;width:100%}
+.logo{font-size:1.25rem;font-weight:800;margin-right:auto;display:inline-flex;align-items:baseline;gap:7px;
+  cursor:pointer;background:none;padding:0}
+.logo i{font-style:normal;font-size:.8rem;color:var(--dim);font-weight:600}
+.logo em{font-style:normal;background:linear-gradient(120deg,var(--acc),var(--acc-2));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#3c4652;flex:none}
+.sync-dot.ok{background:#4ade80}
+.sync-dot.busy{background:var(--acc);animation:pulse 1s infinite}
+.sync-dot.err{background:var(--bad)}
+.sync-dot.off{background:var(--dim);box-shadow:0 0 0 2px rgba(255,255,255,.06)}
+@keyframes pulse{50%{opacity:.3}}
+.gear{width:36px;height:36px;border-radius:12px;background:var(--card2);border:1px solid var(--line);
+  display:grid;place-items:center;font-size:.95rem;flex:none;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1)}
+.gear:active{transform:scale(.92)}
 
 /* header */
 .top{padding:14px 0 10px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
@@ -203,6 +225,11 @@ svg{display:block;width:100%;height:auto;overflow:visible}
 <body>
 
 <div id="probe" style="position:fixed;left:-9999px;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px)"></div>
+<header>
+  <button class="logo" id="logoBtn"><em>Аюми</em><i>歩み</i></button>
+  <div class="sync-dot" id="syncDot"></div>
+  <button class="gear" id="gearBtn" aria-label="Настройки">⚙️</button>
+</header>
 <div id="banner"></div>
 <div id="app" class="wrap"></div>
 
@@ -224,7 +251,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 16';
+const APP_VERSION='Аюми 18';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -668,7 +695,7 @@ function vToday(P,st){
   } else head=heroSession(x,P,!!P.last);
 
   return `
-  <div class="top"><div><h1>${greet()}</h1><div class="sub">${DOW[dow(today())]}, ${fmtDate(today())}${P.gap!=null?' · '+(P.gap===0?'бежал сегодня':P.gap===1?'вчера бежал':`${P.gap} ${plural(P.gap,'день','дня','дней')} без бега`):''}</div></div>
+  <div class="top" style="padding-top:2px"><div class="sub">${DOW[dow(today())]}, ${fmtDate(today())}${P.gap!=null?' · '+(P.gap===0?'бежал сегодня':P.gap===1?'вчера бежал':`${P.gap} ${plural(P.gap,'день','дня','дней')} без бега`):''}</div>
     <span class="tag">занятие ${P.done+1}</span></div>
   ${P.pending?pendingCard(P):''}
   ${(!syncOn()&&st.count>0)?`<button class="card" style="display:block;width:100%;text-align:left;border-color:#3A3322;background:linear-gradient(150deg,rgba(255,176,32,.08),var(--card))" onclick="syncSheet()">
@@ -1291,6 +1318,46 @@ function closeSheet(){document.getElementById('sheet').classList.remove('on')}
 
 function delRun(id){S.runs=S.runs.filter(r=>r.id!==id);touch();render()}
 
+
+/* ---------- о приложении ----------
+   Тот же жанр, что в «Кэйко»: не справка, а объяснение, зачем это вообще. */
+function openAbout(){
+  openSheet(`
+    <div style="text-align:center">
+      <div style="font-size:2rem;font-weight:800;background:linear-gradient(120deg,var(--acc),var(--acc-2));
+        -webkit-background-clip:text;background-clip:text;color:transparent">歩み</div>
+      <h2 style="margin-top:6px">Аюми</h2>
+    </div>
+    <div class="hint" style="margin-top:12px">
+      «Аюми» значит поступь: и то, как человек идёт, и то, как он со временем продвигается.
+      Слово описывает не скорость, а сам ход — шаг за шагом, без обещания скорого результата.
+      Рядом с «Кэйко» (稽古, практика через повторение) это вторая сторона одного подхода:
+      там уходят вглубь одного дела, здесь — идут дальше от того места, где начали.
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="lbl">Почему нет расписания</div>
+      <div class="hint" style="margin-top:8px">Планы на недели вперёд ломаются о первую же пропущенную тренировку, и дальше человек чувствует себя должником. Здесь есть только одно следующее занятие — оно собирается заново после каждой пробежки, а пропуск ничего не портит.</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Почему один вопрос</div>
+      <div class="hint" style="margin-top:8px">Нагрузку двигает не таблица, а твой ответ «как далось». Тело знает про себя больше, чем формула, и единственное, что от тебя нужно, — честно нажать одну из четырёх кнопок.</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Почему путь по карте</div>
+      <div class="hint" style="margin-top:8px">Километры сами по себе ничего не значат. Отложенные по настоящей дороге, они превращаются в расстояние, которое можно себе представить: вот Лисий Нос, вот Зеленогорск, а вон там, через полгода, Выборг.</div>
+    </div>
+    <div class="hint" style="margin-top:14px">
+      Поэтому здесь нет соревнования и нормативов: только ты, дорога и отметка о том, что сегодня ты по ней прошёл.
+    </div>
+    <div style="height:12px"></div>
+    <button class="btn gh sm" onclick="closeSheet()">Закрыть</button>`);
+}
+/* Точка состояния: цвет говорит, что происходит с данными. */
+function setSyncDot(state){
+  const d=document.getElementById('syncDot');
+  if(d)d.className='sync-dot'+(state?' '+state:'');
+}
+
 /* ---------- как далось ---------- */
 function askRpe(id){
   const r=S.runs.find(x=>x.id===id);
@@ -1669,7 +1736,7 @@ function mergeRuns(a,b){
 }
 async function syncPull(quiet){
   if(!syncOn()||syncBusy)return false;
-  syncBusy=true;
+  syncBusy=true;setSyncDot('busy');
   try{
     const g=await gistCall('GET');
     const f=g.files&&(g.files[GFILE]||g.files[GOLD]);
@@ -1686,8 +1753,8 @@ async function syncPull(quiet){
     // локальных пробежек могло быть больше — вернём их в облако
     if(changed&&(rem.runs||[]).length!==S.runs.length)syncPush(true);
     return changed;
-  }catch(e){if(!quiet)toast('Не забралось: '+e.message);return false}
-  finally{syncBusy=false}
+  }catch(e){setSyncDot('err');if(!quiet)toast('Не забралось: '+e.message);return false}
+  finally{syncBusy=false;if(document.getElementById('syncDot')&&!document.getElementById('syncDot').classList.contains('err'))setSyncDot('ok')}
 }
 async function syncPush(quiet){
   if(!syncOn())return false;
@@ -1697,10 +1764,10 @@ async function syncPush(quiet){
     const name=(g.files&&g.files[GOLD]&&!g.files[GFILE])?GOLD:GFILE;   // не плодим второй файл
     await gistCall('PATCH',{files:{[name]:{content:JSON.stringify(
       {runs:S.runs,seen:S.seen,updated:S.updated},null,1)}}});
-    S.syncedAt=Date.now();save();
+    S.syncedAt=Date.now();save();setSyncDot('ok');
     if(!quiet)toast('Отправлено');
     return true;
-  }catch(e){if(!quiet)toast('Не отправилось: '+e.message);return false}
+  }catch(e){setSyncDot('err');if(!quiet)toast('Не отправилось: '+e.message);return false}
 }
 /* Любое изменение данных проходит здесь: сохранили локально и отправили в облако. */
 function touch(){save();if(syncOn())syncPush(true)}
@@ -1826,6 +1893,9 @@ function demo(){
 
 /* ==================== старт ==================== */
 document.querySelectorAll('.tb').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;save();render()});
+document.getElementById('logoBtn').onclick=openAbout;
+document.getElementById('gearBtn').onclick=()=>{S.tab='more';save();render()};
+setSyncDot(syncOn()?'ok':'off');
 if(syncOn())syncPull(true);
 checkForUpdate();
 // приложение вернулось из фона — проверяем, не появилось ли новых данных
