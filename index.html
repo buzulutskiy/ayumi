@@ -259,7 +259,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 29';
+const APP_VERSION='Аюми 31';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -428,7 +428,7 @@ function T_(work,rest,reps,restType){return {work,rest:reps>1?rest:0,reps,restTy
    что реально ставится на часы, — работу и отдых. */
 const WALK_PACE=9;                 // темп шага, мин/км — нужен для оценки километров
 const REST_NAME={walk:'шагом',jog:'трусцой'};
-const L0=22;                       // минут бега в первом занятии
+const L0=15;                       // минут бега в первом занятии
 const CONT=0.85;                   // непрерывный бег тяжелее интервалов при том же времени
 
 /* Как далось занятие — единственный вопрос, который приложение задаёт. */
@@ -451,16 +451,32 @@ function clock(m){const w=Math.floor(m),s=Math.round((m-w)*60);return `${w}:${St
 function mins(m){return km(m)+' мин'}
 function sortedRuns(){return S.runs.slice().sort((a,b)=>a.date<b.date?-1:1)}
 
-/* Уровень — сколько минут бега приложение считает посильными сейчас.
-   Он не хранится, а пересчитывается из всей истории: ответы про самочувствие
-   двигают его вверх или вниз, длинный перерыв откатывает назад. */
-function levelNow(){
+/* Уровень — сколько минут бега сейчас посильно за занятие. Он не хранится,
+   а пересчитывается из всей истории.
+
+   Правило роста взято не с потолка: тренеры сходятся на схеме «увеличил —
+   закрепи». Телу нужно 4–6 недель, чтобы принять новую нагрузку, поэтому
+   ступень держится несколько занятий подряд, растёт на 10%, а каждая
+   четвёртая ступень начинается с разгрузочного занятия. И длительность
+   с интенсивностью не поднимают одновременно — потому бег здесь только
+   спокойный. */
+const HOLD=3;                      // занятий на ступени, прежде чем поднимать
+const STEP=1.10;                   // прибавка ступени
+const CUT=0.8;                     // разгрузочное занятие
+const EVERY=4;                     // каждая четвёртая ступень — разгрузочная
+
+function levelState(){
   const R=sortedRuns();
-  let L=L0;
+  let L=L0, hold=0, steps=0;
   for(const r of R){
-    // шаг не больше 14% за занятие — это и есть защита от резкого скачка
-    if(r.rpe)L*=RPEK(r.rpe);
-    else if(r.min)L=Math.max(L,Math.min(L*1.1,r.min*0.6)); // старые данные без ответа тянут мягко
+    if(!r.rpe){                                   // старые записи без ответа
+      if(r.min)L=Math.max(L,Math.min(L*1.05,r.min));
+      continue;
+    }
+    if(r.rpe===4){L*=0.9;hold=0;continue}         // очень тяжело — шаг назад
+    if(r.rpe===3){hold=0;continue}                // тяжело — закрепляем заново
+    hold++;                                       // легко или нормально
+    if(hold>=HOLD){steps++;L*=STEP;hold=0}
     L=Math.max(6,Math.min(90,L));
   }
   const last=R[R.length-1];
@@ -468,26 +484,36 @@ function levelNow(){
     const gap=daysBetween(fromISO(last.date),today());
     if(gap>28)L*=0.7; else if(gap>14)L*=0.85;
   }
-  return Math.max(6,Math.min(90,Math.round(L*2)/2));
+  // одно занятие не прыгает больше чем на 10% от самого длинного за месяц
+  const cap=maxRecentMin(easyPace()||8.5);
+  if(cap)L=Math.min(L,Math.max(L0,cap*1.1));
+  L=Math.max(6,Math.min(90,Math.round(L*2)/2));
+  return {L,hold,steps,deload:steps>0&&steps%EVERY===0&&hold===0};
 }
+function levelNow(){return levelState().L}
+/* Тип занятия. По умолчанию только спокойный бег: длительность и темп
+   не поднимают одновременно. Чередование включается в настройках. */
 function nextKind(){
+  if(!S.brisk)return 'easy';
   const R=sortedRuns().filter(r=>r.kind);
   const last=R[R.length-1];
   return last&&last.kind!=='brisk'?'brisk':'easy';
 }
-/* Занятие всегда непрерывное: время занятия и время бега — одно и то же число.
-   Отдыха внутри нет, он начинается, когда человек идёт домой пешком.
-   Чередуется не структура, а темп: спокойный бег учит держаться дольше,
-   бодрый — держать скорость. */
-function buildSession(L,kind,pace){
-  const work=Math.max(5,Math.round(kind==='brisk'?L*0.7:L));
+/* Занятие всегда непрерывное и спокойное: время занятия и время бега — одно
+   и то же число. Отдых начинается, когда человек идёт домой пешком.
+   Бодрый бег включается вручную в настройках и по умолчанию выключен:
+   поднимать длительность и интенсивность разом нельзя. */
+function buildSession(L,kind,pace,deload){
+  const work=Math.max(5,Math.round(kind==='brisk'?L*0.7:(deload?L*CUT:L)));
   if(kind==='brisk')
     return makeSession(T_(work,0,1),pace,'brisk',{
       title:'Бодрый бег',
       goal:`Пробежать ${mins(work)} в бодром темпе: дышать тяжело, но говорить ещё можешь.`});
   return makeSession(T_(work,0,1),pace,'easy',{
-    title:'Спокойный бег',
-    goal:`Пробежать ${mins(work)} и ни разу не перейти на шаг. Скорость не важна.`});
+    title:deload?'Разгрузочный бег':'Спокойный бег',
+    goal:deload
+      ? `Пробежать ${mins(work)} налегке. Это занятие нарочно короче — тело закрепляет то, что уже набрано.`
+      : `Пробежать ${mins(work)} и ни разу не перейти на шаг. Скорость не важна.`});
 }
 const paceKnownNow=()=>!!easyPace();
 function makeSession(t,pace,kind,extra){
@@ -510,15 +536,16 @@ const pace2=(p)=>pace(p,1);
 /* Всё состояние приложения в одном месте. */
 function plan(){
   const paceRaw=easyPace(),pace=paceRaw||8.5;
-  const L=levelNow(),kind=nextKind();
+  const st=levelState(),L=st.L,kind=nextKind();
   const R=sortedRuns();
   const last=R[R.length-1];
   return {L,kind,pace,paceKnown:!!paceRaw,
-    next:buildSession(L,kind,pace),
-    other:buildSession(L,kind==='brisk'?'easy':'brisk',pace),
+    next:buildSession(L,kind,pace,st.deload),
+    other:buildSession(L,S.brisk?(kind==='brisk'?'easy':'brisk'):'easy',pace,false),
     done:R.length,last,
     gap:last?daysBetween(fromISO(last.date),today()):null,
     pending:R.filter(r=>!r.rpe&&r.kind).slice(-1)[0]||null,
+    hold:st.hold,steps:st.steps,deload:st.deload,
     cadence:cadenceDays(),kmPer:kmPerSession(pace,L)};
 }
 /* Как часто он бегает на самом деле — медиана промежутков между пробежками. */
@@ -538,6 +565,12 @@ function kmPerSession(pace,L){
   const R=sortedRuns().filter(r=>r.dist>0).slice(-6);
   if(R.length>=3){const d=R.map(r=>r.dist).sort((a,b)=>a-b);return d[Math.floor(d.length/2)]}
   return Math.max(1.5,Math.round((L/pace)*10)/10);
+}
+/* Самое длинное занятие за месяц — потолок для скачка одной пробежки. */
+function maxRecentMin(pace){
+  const from=addDays(today(),-30);
+  const R=S.runs.filter(r=>fromISO(r.date)>=from);
+  return R.length?Math.max(...R.map(r=>r.min||r.dist*pace)):0;
 }
 function easyPace(){
   const R=S.runs.filter(r=>r.min>0&&r.dist>=1).slice(-10);
@@ -762,18 +795,25 @@ function vSessions(P,st){
   <div class="card">
     <div class="lbl">Следующее</div>
     <div style="display:flex;gap:12px;align-items:baseline;margin-top:8px">
-      <div style="font-size:30px;font-weight:700;letter-spacing:-.03em">${km(P.next.runMin)}<span style="font-size:15px;color:var(--mut);font-weight:600"> мин</span></div>
+      <div style="font-size:30px;font-weight:700;letter-spacing:-.03em">${km(P.next.allMin)}<span style="font-size:15px;color:var(--mut);font-weight:600"> мин</span></div>
       <div style="flex:1"><b>${P.next.title}</b><div class="hint">${P.next.plan}</div></div>
     </div>
-    <div class="hint" style="margin-top:12px">А следом за ним — ${P.other.title.toLowerCase()}, ${mins(P.other.runMin)} бега. Типы чередуются: интервалы учат держать темп, непрерывный бег — держаться дольше.</div>
+    <div class="hint" style="margin-top:12px">${P.deload
+      ? 'Это занятие разгрузочное — короче обычного, чтобы тело закрепило набранное.'
+      : `На этой ступени ${P.hold} ${plural(P.hold,'занятие','занятия','занятий')} из ${HOLD}, дальше она поднимется.`}</div>
   </div>
   <div class="card">
     <div class="lbl">Как считается</div>
     <div class="hint" style="margin-top:8px;line-height:1.65">
-      Сейчас твой уровень — <b style="color:var(--tx)">${km(P.L)} мин бега</b> за занятие. Двигают его только твои ответы после пробежки:
-      «легко» прибавляет 14%, «нормально» — 7%, «тяжело» оставляет как есть, «очень тяжело» снимает 12%.
-      Больше 14% за раз уровень вырасти не может, и это не осторожность ради осторожности: резкий скачок одной пробежки предсказывает травмы лучше, чем недельный объём.
-      Перерыв больше двух недель откатывает уровень на 15%, больше месяца — на 30%, чтобы возвращение было мягким.
+      Сейчас ступень — <b style="color:var(--tx)">${km(P.L)} мин бега</b> за занятие.
+      Схема простая и не выдуманная: <b style="color:var(--tx)">увеличил — закрепи</b>. Ступень держится ${HOLD} занятия подряд,
+      потом растёт на 10%, а каждая четвёртая ступень начинается с разгрузочного занятия.
+      Телу нужно несколько недель, чтобы принять новую нагрузку, и торопить это нечем.
+    </div>
+    <div class="hint" style="margin-top:10px;line-height:1.65">
+      Ответ «тяжело» обнуляет счётчик закрепления, «очень тяжело» снимает 10% с самой ступени.
+      Перерыв больше двух недель откатывает на 15%, больше месяца — на 30%.
+      И отдельно: занятие не растёт больше чем на 10% от самого длинного за последний месяц.
     </div>
   </div>
   <div class="card">
@@ -1277,6 +1317,14 @@ function vMore(P,st){
     </div>
   </div>
   <div class="card">
+    <div class="lbl">Бодрый бег</div>
+    <div class="hint" style="margin-top:8px">${S.brisk?'Занятия чередуются: спокойное, потом бодрое.':'Выключен. Длительность и темп не поднимают одновременно, поэтому сначала спокойный бег и ступени, а скоростная работа — когда сам захочешь.'}</div>
+    <div class="seg" style="margin-top:12px">
+      <button class="${S.brisk?'':'on'}" onclick="setBrisk(0)">Только спокойный</button>
+      <button class="${S.brisk?'on':''}" onclick="setBrisk(1)">Чередовать</button>
+    </div>
+  </div>
+  <div class="card">
     <div class="lbl">Синхронизация</div>
     <div class="hint" style="margin-top:8px">${syncOn()
       ?`Подключена. Забирается при каждом открытии, отправляется после любого изменения. Последний обмен: ${syncAge()}.`
@@ -1315,6 +1363,7 @@ function vMore(P,st){
     <button class="btn gh sm" style="margin-top:10px;color:var(--bad);border-color:#3A2622" onclick="wipe()">Стереть всё</button>
   </div><div style="height:20px"></div>`;
 }
+function setBrisk(v){S.brisk=!!v;touch();render();toast(v?'Занятия будут чередоваться':'Только спокойный бег')}
 function resetLevel(){
   if(!confirm('Убрать ответы о самочувствии? Пробежки останутся, уровень начнётся заново.'))return;
   S.runs.forEach(r=>{delete r.rpe});touch();render();toast('Уровень сброшен');
