@@ -213,8 +213,12 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 2';
+const APP_VERSION='Аюми 3';
 let newVersion='';
+/* Регистрируем обработчик: без него iOS держится за старую копию страницы,
+   и никакая проверка версии до человека не доедет. */
+if('serviceWorker' in navigator)
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
 async function checkForUpdate(){
   if(!navigator.onLine)return;
   try{
@@ -241,15 +245,16 @@ async function forceUpdate(){
   try{sessionStorage.setItem('ayumi.tried',newVersion||'')}catch(e){}
   const cleanup=(async()=>{
     try{
-      if('serviceWorker' in navigator){
-        const regs=await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r=>r.unregister()));
-      }
       if(window.caches){
         const keys=await caches.keys();
         await Promise.all(keys.map(k=>caches.delete(k)));
       }
-      await fetch('index.html',{cache:'reload'}).catch(()=>{});
+      await Promise.all(['index.html','sw.js','version.json'].map(
+        f=>fetch(f,{cache:'reload'}).catch(()=>{})));
+      if('serviceWorker' in navigator){
+        const r=await navigator.serviceWorker.getRegistration();
+        if(r)await r.update().catch(()=>{});
+      }
     }catch(e){}
   })();
   // если что-то из этого зависнет — на iOS такое бывает, — всё равно перезагружаемся
