@@ -222,7 +222,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 8';
+const APP_VERSION='Аюми 11';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -315,47 +315,67 @@ function defaultProfile(){return {created:iso(today())}}
    Набеганные километры откладываются по реальной карте. Каждая остановка — факт. */
 const ROUTES=[
  {name:'Карельский перешеек',sub:'от города вдоль залива на Выборг, через перешеек к Ладоге и обратно',ic:'🌲',stops:[
-  {km:12, c:'Лахта',                f:'Отсюда начинается перешеек — полоса суши между Финским заливом и Ладогой шириной от 45 до 110 километров. Всё, что дальше, лежит на ней.'},
-  {km:18, c:'Ольгино',              f:'Дюны вдоль берега — древние пляжи Литоринового моря, которое стояло здесь после ледника и было заметно выше нынешнего залива.'},
-  {km:25, c:'Лисий Нос',            f:'Мелководье уходит от берега на сотни метров. Зимой по нему намерзает такой лёд, что до Кронштадта в старину ездили на санях.'},
-  {km:34, c:'Сестрорецк',           f:'Оружейный завод, основанный Петром, работал больше двух веков. Ради заводских нужд запрудили реку Сестру — так появился Разлив.'},
-  {km:38, c:'Разлив',               f:'Тот самый шалаш. Место обозначено гранитным шалашом-памятником 1928 года — редкий случай, когда в граните повторили сено.'},
-  {km:42, c:'Сестрорецкое болото',  f:'Верховое болото, которому около восьми тысяч лет: оно старше почти всего, что вокруг, и его ни разу не осушали. Ледник ушёл — болото осталось.'},
-  {km:46, c:'Солнечное',            f:'Сосны на песке держатся корнями у самой поверхности. Поэтому по здешним дюнам нельзя ездить: колея убивает лес быстрее пожара.'},
-  {km:50, c:'Репино, «Пенаты»',     f:'Усадьба Репина. Он завёл круглый стол с вертушкой, чтобы гости передавали блюда сами: прислуги за столом он не терпел.'},
-  {km:54, c:'Комарово',             f:'На здешнем кладбище лежат Ахматова, Лихачёв, Гердт. Дачи давали академикам и писателям — посёлок так и остался учёным.'},
-  {km:58, c:'Зеленогорск',          f:'До 1948 года — финский Терийоки, дачная столица начала века. На лето сюда уезжал едва ли не весь литературный Петербург.'},
-  {km:64, c:'Ушково',               f:'Финские названия на перешейке держатся в озёрах и станциях. «Ярви» значит просто «озеро» — их тут больше семисот.'},
-  {km:70, c:'Серово',               f:'Береговые валы идут параллельно морю несколькими грядами: каждая — линия прибоя, отступавшая по мере того, как поднималась суша.'},
-  {km:76, c:'Молодёжное',           f:'Суша здесь продолжает подниматься примерно на три миллиметра в год — земля до сих пор распрямляется после снятой тяжести ледника.'},
-  {km:84, c:'Приветнинское',        f:'Открытый берег, где хорошо видно, как мелка Балтика: отойти можно на сотню метров, а воды всё по колено.'},
-  {km:95, c:'Озеро Красавица',      f:'Одно из самых чистых озёр перешейка. Финское имя Каукъярви значит «дальнее озеро» — дальним оно было от всех дорог.'},
-  {km:105,c:'Рощино',               f:'Сосновые боры стоят на песчаных грядах — это озы и камы, насыпанные талыми водами ледника. Такой рельеф тянется через весь перешеек.'},
-  {km:115,c:'Каннельярви',          f:'Перешеек — водораздел: реки с одной стороны идут в залив, с другой в Ладогу, и разделяет их всего несколько километров.'},
-  {km:135,c:'Приморск',             f:'Бывший Койвисто. Кирха 1904 года из серого гранита — одна из самых крупных, что финны успели построить на этом берегу.'},
-  {km:150,c:'Ермилово',             f:'Дальше начинается самая изрезанная часть побережья: шхеры — затопленные скалы, по которым Балтика заходит в сушу сотнями проток.'},
-  {km:165,c:'Выборгский залив',     f:'Шхерные острова здесь — вершины гранитных холмов. Ледник срезал с них всё мягкое, оставив голый камень, отполированный до блеска.'},
-  {km:175,c:'Выборгский замок',     f:'Единственный в России целиком сохранившийся западноевропейский рыцарский замок. Шведы поставили его в 1293 году на голой скале посреди пролива.'},
-  {km:182,c:'Парк Монрепо',         f:'Скальный пейзажный парк: гранитные лбы, вылизанные ледником, среди сосен. Камни здесь — главные экспонаты, их специально не трогали.'},
-  {km:190,c:'Библиотека Аалто',     f:'Библиотека Алвара Аалто 1935 года. Её волнистый деревянный потолок до сих пор разбирают как образцовое решение акустики.'},
-  {km:205,c:'Гвардейское',          f:'Поворот на восток. Дальше дорога идёт поперёк перешейка — от залива к Ладоге, через самую его середину.'},
-  {km:215,c:'Каменногорск',         f:'Гранитные карьеры. Отсюда шёл камень на ленинградские набережные и станции метро — тот самый рапакиви с крупными округлыми зёрнами.'},
-  {km:230,c:'Светогорск',           f:'Город стоит на самой границе. За рекой Вуоксой начинается финская Иматра, и водопад там пускают по расписанию, как аттракцион.'},
-  {km:245,c:'Мельниково',           f:'Бывший Ряйсяля. Вуокса здесь разливается на протоки и озёра: единой реки нет, есть система, в которой легко заблудиться.'},
-  {km:255,c:'Лосево',               f:'Лосевские пороги рукотворные. В 1857 году прорыли канал, чтобы связать Суходольское озеро с Вуоксой, вода пошла не туда и переписала гидрографию всего перешейка.'},
-  {km:265,c:'Суходольское озеро',   f:'После той же аварии 1857 года озеро упало на несколько метров и обнажило берега. Старая береговая линия видна до сих пор.'},
-  {km:275,c:'Вуокса',               f:'Островов на Вуоксе больше, чем их успели сосчитать: протоки постоянно меняются, и карты расходятся между собой.'},
-  {km:285,c:'Крепость Корела',      f:'Шесть веков переходила из рук в руки. В её башне держали семью Емельяна Пугачёва — жену и детей, много лет после его казни.'},
-  {km:295,c:'Бухта Владимирская',   f:'Отсюда ходят на Коневец. На острове лежит Конь-камень — валун весом под семьсот тонн, которому поклонялись задолго до крещения этих мест.'},
-  {km:310,c:'Берег Ладоги',         f:'Ладога — самое большое озеро Европы. Волна на ней бывает морская, и штормы топили корабли не хуже балтийских.'},
-  {km:325,c:'Громово',              f:'Кругом озёрные котловины, выпаханные ледником. Их вытянутость с северо-запада на юго-восток — это направление, в котором он двигался.'},
-  {km:340,c:'Сосново',              f:'Граница тайги: отсюда на север лес идёт почти без перерыва. Южнее перешейка такого сплошного массива уже нет.'},
-  {km:355,c:'Орехово',              f:'Озёра здесь лежат цепочками в ложбинах между камами. Вода в них тёмная от торфа, но чистая.'},
-  {km:365,c:'Токсово',              f:'Лыжная столица под городом. Здешние горки — тоже камы: ледник насыпал их из песка и гравия, а люди приспособили под трамплины.'},
-  {km:375,c:'Всеволожск',           f:'Отсюда начиналась Дорога жизни. Километровые столбы вдоль неё стоят до сих пор, и счёт на них идёт от Ленинграда.'},
-  {km:385,c:'Ржевка',               f:'Круг замкнулся: перешеек пройден по кругу — вдоль залива на север, поперёк к Ладоге и обратно вдоль неё к городу.'},
+  {km:17, c:'Лахта',                f:'Отсюда начинается перешеек — полоса суши между Финским заливом и Ладогой шириной от 45 до 110 километров. Всё, что дальше, лежит на ней.',ll:[59.999,30.158]},
+  {km:22, c:'Ольгино',              f:'Дюны вдоль берега — древние пляжи Литоринового моря, которое стояло здесь после ледника и было заметно выше нынешнего залива.',ll:[59.995,30.086]},
+  {km:27, c:'Лисий Нос',            f:'Мелководье уходит от берега на сотни метров. Зимой по нему намерзает такой лёд, что до Кронштадта в старину ездили на санях.',ll:[60.014,30.01]},
+  {km:38, c:'Сестрорецк',           f:'Оружейный завод, основанный Петром, работал больше двух веков. Ради заводских нужд запрудили реку Сестру — так появился Разлив.',ll:[60.098,29.964]},
+  {km:41, c:'Разлив',               f:'Тот самый шалаш. Место обозначено гранитным шалашом-памятником 1928 года — редкий случай, когда в граните повторили сено.',ll:[60.086,29.995]},
+  {km:47, c:'Сестрорецкое болото',  f:'Верховое болото, которому около восьми тысяч лет: оно старше почти всего, что вокруг, и его ни разу не осушали. Ледник ушёл — болото осталось.',ll:[60.125,29.988]},
+  {km:53, c:'Солнечное',            f:'Сосны на песке держатся корнями у самой поверхности. Поэтому по здешним дюнам нельзя ездить: колея убивает лес быстрее пожара.',ll:[60.152,29.933]},
+  {km:59, c:'Репино, «Пенаты»',     f:'Усадьба Репина. Он завёл круглый стол с вертушкой, чтобы гости передавали блюда сами: прислуги за столом он не терпел.',ll:[60.172,29.867]},
+  {km:63, c:'Комарово',             f:'На здешнем кладбище лежат Ахматова, Лихачёв, Гердт. Дачи давали академикам и писателям — посёлок так и остался учёным.',ll:[60.19,29.803]},
+  {km:70, c:'Зеленогорск',          f:'До 1948 года — финский Терийоки, дачная столица начала века. На лето сюда уезжал едва ли не весь литературный Петербург.',ll:[60.201,29.702]},
+  {km:77, c:'Ушково',               f:'Финские названия на перешейке держатся в озёрах и станциях. «Ярви» значит просто «озеро» — их тут больше семисот.',ll:[60.219,29.617]},
+  {km:85, c:'Серово',               f:'Береговые валы идут параллельно морю несколькими грядами: каждая — линия прибоя, отступавшая по мере того, как поднималась суша.',ll:[60.231,29.549]},
+  {km:97, c:'Молодёжное',           f:'Суша здесь продолжает подниматься примерно на три миллиметра в год — земля до сих пор распрямляется после снятой тяжести ледника.',ll:[60.25,29.47]},
+  {km:113, c:'Приветнинское',        f:'Открытый берег, где хорошо видно, как мелка Балтика: отойти можно на сотню метров, а воды всё по колено.',ll:[60.291,29.283]},
+  {km:119, c:'Озеро Красавица',      f:'Одно из самых чистых озёр перешейка. Финское имя Каукъярви значит «дальнее озеро» — дальним оно было от всех дорог.',ll:[60.313,29.198]},
+  {km:150,c:'Рощино',               f:'Сосновые боры стоят на песчаных грядах — это озы и камы, насыпанные талыми водами ледника. Такой рельеф тянется через весь перешеек.',ll:[60.253,29.604]},
+  {km:177,c:'Каннельярви',          f:'Перешеек — водораздел: реки с одной стороны идут в залив, с другой в Ладогу, и разделяет их всего несколько километров.',ll:[60.418,29.352]},
+  {km:238,c:'Приморск',             f:'Бывший Койвисто. Кирха 1904 года из серого гранита — одна из самых крупных, что финны успели построить на этом берегу.',ll:[60.367,28.613]},
+  {km:255,c:'Ермилово',             f:'Дальше начинается самая изрезанная часть побережья: шхеры — затопленные скалы, по которым Балтика заходит в сушу сотнями проток.',ll:[60.452,28.601]},
+  {km:281,c:'Выборгский залив',     f:'Шхерные острова здесь — вершины гранитных холмов. Ледник срезал с них всё мягкое, оставив голый камень, отполированный до блеска.',ll:[60.56,28.7]},
+  {km:302,c:'Выборгский замок',     f:'Единственный в России целиком сохранившийся западноевропейский рыцарский замок. Шведы поставили его в 1293 году на голой скале посреди пролива.',ll:[60.715,28.729]},
+  {km:305,c:'Парк Монрепо',         f:'Скальный пейзажный парк: гранитные лбы, вылизанные ледником, среди сосен. Камни здесь — главные экспонаты, их специально не трогали.',ll:[60.735,28.7]},
+  {km:310,c:'Библиотека Аалто',     f:'Библиотека Алвара Аалто 1935 года. Её волнистый деревянный потолок до сих пор разбирают как образцовое решение акустики.',ll:[60.712,28.752]},
+  {km:335,c:'Гвардейское',          f:'Поворот на восток. Дальше дорога идёт поперёк перешейка — от залива к Ладоге, через самую его середину.',ll:[60.78,29.05]},
+  {km:364,c:'Каменногорск',         f:'Гранитные карьеры. Отсюда шёл камень на ленинградские набережные и станции метро — тот самый рапакиви с крупными округлыми зёрнами.',ll:[60.951,29.128]},
+  {km:390,c:'Светогорск',           f:'Город стоит на самой границе. За рекой Вуоксой начинается финская Иматра, и водопад там пускают по расписанию, как аттракцион.',ll:[61.11,28.868]},
+  {km:465,c:'Мельниково',           f:'Бывший Ряйсяля. Вуокса здесь разливается на протоки и озёра: единой реки нет, есть система, в которой легко заблудиться.',ll:[60.902,29.98]},
+  {km:515,c:'Лосево',               f:'Лосевские пороги рукотворные. В 1857 году прорыли канал, чтобы связать Суходольское озеро с Вуоксой, вода пошла не туда и переписала гидрографию всего перешейка.',ll:[60.677,30.129]},
+  {km:559,c:'Суходольское озеро',   f:'После той же аварии 1857 года озеро упало на несколько метров и обнажило берега. Старая береговая линия видна до сих пор.',ll:[60.72,30.3]},
+  {km:587,c:'Вуокса',               f:'Островов на Вуоксе больше, чем их успели сосчитать: протоки постоянно меняются, и карты расходятся между собой.',ll:[60.85,30.05]},
+  {km:626,c:'Крепость Корела',      f:'Шесть веков переходила из рук в руки. В её башне держали семью Емельяна Пугачёва — жену и детей, много лет после его казни.',ll:[61.037,30.126]},
+  {km:643,c:'Бухта Владимирская',   f:'Отсюда ходят на Коневец. На острове лежит Конь-камень — валун весом под семьсот тонн, которому поклонялись задолго до крещения этих мест.',ll:[60.946,30.297]},
+  {km:664,c:'Берег Ладоги',         f:'Ладога — самое большое озеро Европы. Волна на ней бывает морская, и штормы топили корабли не хуже балтийских.',ll:[60.8,30.4]},
+  {km:723,c:'Громово',              f:'Кругом озёрные котловины, выпаханные ледником. Их вытянутость с северо-запада на юго-восток — это направление, в котором он двигался.',ll:[60.65,30.303]},
+  {km:736,c:'Сосново',              f:'Граница тайги: отсюда на север лес идёт почти без перерыва. Южнее перешейка такого сплошного массива уже нет.',ll:[60.554,30.245]},
+  {km:749,c:'Орехово',              f:'Озёра здесь лежат цепочками в ложбинах между камами. Вода в них тёмная от торфа, но чистая.',ll:[60.47,30.25]},
+  {km:796,c:'Токсово',              f:'Лыжная столица под городом. Здешние горки — тоже камы: ледник насыпал их из песка и гравия, а люди приспособили под трамплины.',ll:[60.152,30.512]},
+  {km:821,c:'Всеволожск',           f:'Отсюда начиналась Дорога жизни. Километровые столбы вдоль неё стоят до сих пор, и счёт на них идёт от Ленинграда.',ll:[60.02,30.633]},
+  {km:836,c:'Ржевка',               f:'Круг замкнулся: перешеек пройден по кругу — вдоль залива на север, поперёк к Ладоге и обратно вдоль неё к городу.',ll:[59.941,30.482]},
  ]},
 ];
+/* Геометрия настоящего пешего маршрута по данным OpenStreetMap, посчитана
+   заранее и вшита сюда: приложение не должно ходить в маршрутизатор на ходу.
+   Кодировка — обычная полилиния Google, точность 5 знаков. */
+const ROUTE_START=[59.939, 30.3609];
+const ROUTE_LINE="wyylJeyhxDo@nmArDb@HlWwV`^bDdTi]zRpAxIyCdFci@x`@MnDiPxOeAnGwAw@a@`d@wO`KZnHmh@jdBu@niAyRvc@}J~HoRxvA\\`KyLlDcG`]{NqIsM~@_FpmBkd@`{GjDdYuBhS|B~b@`DA@l\\wBEAhg@cEQyApCwHpuAcMsNqAlAuGkE{JiYgFfIfFgIzJhYtGjEsElj@i@z|@rIxHyFbuByIxh@qCvfBpHx@bItTs@ze@ul@rwAwYt}Dg[~hCmK~e@sFpDsCaBGwDwOl@kXjMyMjNaT`i@qHrs@cW|g@u@cBaBlB{I|WuOnPiK|CsFuDai@nGm[_Hi[rBiIlETjEiFzHaPbL}l@hJeH`Go@kBaUfAaJaBe`@|F{a@dLq@{A{LbJ_NyDsCvFS`PsGWeBvBwCwHwFrBgBkIrBrIrFqB~@hHhM{ARaPrCwF~MxDzLcJba@}JYsRt@oGzCk@}@q`@sEqCrEpCn@|OLrO{Cj@u@nGXrRca@|J{LbJcLkFmGJA_WyQaSoi@_Gcj@hP{MbLuCiKsUwHiJ_JsFca@sFcFkJyh@yEaC_B`FkDmBwAkIgLeJ_PsDqJrA`Fbe@}IyBuErAyV~v@aKhgA{Jbp@qVh_AaZ|cCwNyMrAoJwAqLvApLsAnJvNxM]l_@sEbi@kOfw@l@j\\qClQaF|QiMtSiFd_@wNhi@qEkGmFoAeNzXa^b\\gAz\\aAgOa^h|CsDxVyCo@}]vaDcIn[cCAqDd\\eRhU`FcEfNrJdCzPcBbX`DdFwP`yAlAhf@cLx{@ZxMyTfpDAf\\eKdHmDbYsCjEiBte@aOzd@xBp^aJfHzFvDtLnr@v^~LTtnA_G`cAeGfE_F`WaEDaAxCQzMaE~Ar@j`@aPb{@jBnGeGfj@uBl@FrVwQfOeY|HqTxScTxBgH~f@iFwBvBfKgHrNuRom@wYbn@tHd_@hOzhBup@t^wFeDYdCkFa@sCnG}ItBtBhk@wGrCvGz`@oBzRrH|P~EjChi@fjA_TbTgHtNgg@~c@{JeJ_OxEyGid@{BnFwJm@cJqX{GrQqQdQ{AdT}EXK|EmGoBeOvSmOrpAbBpSqBjSp@n]eMdc@kDlg@_RhYyIzCgMxOuK|CkXpn@~Al[}N|oApFtJdAlZdTcLlAwS`h@qi@zM``@lZfKbD`W?`ZqElr@DdsAiBlGoCoB}DnFuGrVyFcOuFrRyBcIgMsIqIjkAeEbPoE|CeAlMuR|k@kEni@wHoKyg@xDkD~C~Als@iMdq@eMxWwFt\\[|pAiGhnA|AdPnb@h}A_G~VjAlk@kFrIiBnc@yFtBiJde@kEWiHz]my@zsBsCbb@~M{@fF{LvLqGfChCfL_PnPjCxUtRjOrnB}LT{BrB{Wbx@uGln@jApUuNxs@qDdEcQtCwK~LuAdIhCpZqB|VbDn^cMxVaIhHoE|UnE}U`IiHbMyVcDo^pB}ViCqZtAeIvK_MbQuCpDeEtNys@I{i@|K_l@vH{KrI_\\dM]zTqLlEyEfHi]xCgBhOl@`G}HyFqlAn@mh@ePiFaSmPc@_Ts`@gbB`CoIH_VjFsIkAmk@~F_W}d@yhBUmYnGqy@Z}pAvFu\\dMyWhMeq@_Bms@jD_Dxg@yDjI~IvD_h@tR}k@dAmMnE}CdEcPhLu_BhDyL_\\g}@oOuLiLm\\e@k}@qFuJ|N}oA_Bm[jXqn@tK}CfMyOxI{C~QiYjDmg@dMec@q@o]pBkScBqSnLox@uAwCzBcN|P_XlGnBJ}E|EYzAeTpQeQvCoJa@wZ|Ic`@}LkWq@{ZkIeTxEqQqFs@qUmo@eIaw@nLwc@zBcr@~CZ_D[_AjOuPsEyKqLkIjOcE`ZcKhY{O|KqEB}g@xeAfAp\\aCzNqMjc@sXn[oB~Vab@dFKgCyY`G}z@xdCyLkPmJcEuEzDyCq@sGr_@dAjH}f@fjAoD~BoB{@iJmM_Hf{@_Kt`@lCf`@rQfYkPyAuJn^aWrZmV`u@uq@veAi`@roAsFjI{GRuLrN^tHiF~ZcUnTgCh\\oEfGsBh^zB|MaTru@yD`b@W~j@yXrQoOyB{\\fUkHV_GvEgMS}IgE{FlCeAdK}DzCaPdf@oGhk@qTwX_FyO{fBfmC}Vdr@}EeBaA|BqIVuIeH}HbAn@fRaCzWsEgCoE`GnEaGrEfCs@dKhN`FtCeIvI_GxCvW~EdEw\\~iCfKpe@zGzDxB~F`Azn@lKlW|I`|@l@~o@fn@bdGzBv`@{CtPf_Aj`DzRlkB|DcApb@zhFhHoMh\\}VpLsUjL~d@dCn@tGn]cFlI_Bh\\pEde@Tdt@aWxOyDnWvNnK`CfQiB~Nya@~`BsMb^eBtPmQhVoJt]eLdR_@dVoIrP_BbZsS`fAvRrr@rAtdAoDfL~IzOrD`b@`@pp@oH|cApHbG~C|LhFu@rV`GhJ`KtG{ArZbd@pTgHnJmKlGuX~JuCtDbDbOiH~ItAnGaBzQhE~CjJlk@hw@bOlo@vGsB~En|@sJhp@q@x_@hF`IdH_LbCfDkDhu@nDPiAfKvF~J|Ec@uApIhU|`@zDra@vQxPvGaDtUd@|DgDjD|Avi@jiApDhBrEoAzJxGtG?dJfFvItc@wBfZeMp^oGbg@sWxt@}@xQiDjFyJbKeH}@yLdEw[zbAiWpIsSz_@qZtU_v@lMqMxLgKvy@r@n[kPjjAnAlp@qAhl@oH~R{Ihg@v@fHaOtLmIr[kLljC`Axh@~Dh\\u@d`B`OzpAvM~]re@zvBjIfbAbAjm@{M`|Dgd@bfCZlzBoO~o@yIcDiFlBgm@xrA}HeGoBhAcI_FcNk@aN}m@b@sr@cEeNy]fFsm@sj@kKd@qWyGkj@qmAaa@mPeFwGug@_hBoLis@oFjCqDxKc\\hBKdUs\\bu@k\\lqA{OhOkQn`@mBfL`BtWsBjLiKvIyMiAeI`N}HrCkGtIgJr[}EnCkDfKoKlLiKf_@kU`d@sQ`k@`V~a@xG|EdKmLdOg^pM`EqMaEeOf^qJxKmHiEaV_b@rQak@jUad@hKg_@nKmLjDgK|EoCfJs[jGuI|HsCdIaNxMhAhKwIrBkLaBuWlBgLjQo`@zOiOj\\mqAf]mw@G{RuE{L{I{gA{Smp@kEsj@_Zs{@ed@_Re@oCg_Af@{EqD}^dv@k^|CmOgFaQ_Wcn@kIwlAteAkDN{K{KiSnOcRtEiSgWiTrDgIhHeDmAmElFy^pOaJZ{cAna@si@i\\cNec@}C{DkHnAkBsKeEqE}Hyk@yGgFwPyA}R~EmGnTeg@|x@yLzH}PNemBy}@yKgKy[{NoGiAlElGqFpAeq@}]sP}Tsj@}fAuQmFqDaFwEmUdHkOqc@ey@aWgPmxCgIkT|i@{c@|g@}Ey@cKiKuFgOuHo@sRiTaIFuWxp@aHfFwOfCsPhXLmc@uAu@yGHcBsBkNxEiNk@wCaKqDiAga@hNiCaz@qOat@yK~F}Wvi@sGcDce@tP}v@xoC}b@~fAeA_CiIjHcNpp@kOvT}Ond@_NjFsNuCbPnChNqHbNcb@jOwTbNqp@hIkHHyCfBZtM}[Cai@dCcLjKmGxAif@tLod@iCaYbBoHvBSkCXcAu]gUqMqRi^_Kwh@gAqUnE_RpIakAhJka@Pga@i^}zBIwZ}]g{EwSyx@mUc`@i`@ue@ki@y^o@|EaKxI_KwBgFvKgN`MwGmPcDyYoIfG{Eq@aHmZyED}HpIqByFeTh`@aT}Y_l@czAqMs`AoLePgRal@eOiXMsTmh@euB~FuTo@aM{L_QkOfAaGaz@kFgb@kMwh@{Eqo@`S{}@~EyCfSi^zAgKfDKhT{PlGkPbAcQnIyV`@ahAlE{Pbs@yRjAuC~Du}@mCe{AdGwUfB{e@~HeXqLkOoHkl@aBkn@jAaMcCyQcFaMuFkDcVtLePsEqF_I}AqWyGbOgD[}B|BeDkAuLyZkMmOcBk^mLkPoJrCePmYuKrFoX~_@iS}F}F`CoJaH{OoViM`BoMeCwIvMiIt_@{Ez@_B~DiDlY}B[wJrJ}EzZwEPiCvG}GdEsDnOyFjFqSri@{IdG_GkHaHr@cIcVkVtPsIiiAaSqa@aJmFgExCsIgBiFiG}Ig^gRvDeW~RmTnCgDKeRwO}FkTyIqHg^ip@sI{WaLmJiTgIeNw@}BcDtJmbA_Hai@_N{CqPvEmF}@{[ii@sCb@oAuCgKN}FfPsH~HgDqFeFvA_BgFar@qKoXuSi`@qDcE~Nc^jY~C~MiObo@kE|GwEkA{AdG{DKgQt~@oJvEyJClCdMvB_Dj@`Ck@aCsCfDoAmFuEoCiL~NsHlZc@h_@cKd\\{Fhs@eNhByFtG}IzA}QzWmQtDgInN{EhAmFgBcP`^oJoTyJx^uB~UcFfLoFhGyN~@gTd]wOzs@uCleAiLt_@m@rp@cMhf@uG~~BcRbs@gNd\\aFhh@cJdScGdFkS|h@cLtv@{[~b@uF|_@oIdRif@r]cRvt@qMbYcGro@uIzXiCre@uYxGyFoE{NeBy[`JwRzIk_@pd@mLcTaLmGgIeXoGqFqEVu^hT}E_BaR~Fgf@f|@aMlCmDdOaCi@_IxPuA~`@aNdU}Cb_@w[~|@iG`n@aGzOad@rk@kJ}IaNnP_CuK~BtK`NoPjJ|I`d@sk@`G{OhGan@v[_}@|Cc_@`NeUtA_a@~HyP`Ch@lDeO`MmCff@g|@`R_GTeG{WasAm@oU_Nsk@wAy]iGoW\\_aAmBwVrOgp@n@{v@~Fa`@`n@{o@xQqBpNwaAx@{i@uB}\\fCklAiEyQhBoV}BoRwFcFwOuh@g@cg@kFiR~B}m@qDa]zFm}@pL{g@kByg@jHmo@hHoRlAuv@tJov@eHin@tDwUcBkd@~@e]tBsL`W_j@|GibBlLwo@{By]`CyYbGuPDis@jGy_@cBi`@vKg_BeB}_@~AqVnMma@bMqtAoDgk@wO_fAvDi_AkBaqAtEutA`Kg{@pDkOvTw[tEoWuMyv@qN_EiFuJ~]abAlVw[hf@e~At[gc@`s@gg@vB{NzEe~BvDzBjAcAR{TpQuTnHlAlLwClYka@xIgCvDoFnT_cBnIiqA^mq@zIu^hFcg@Lis@bq@i{DxQuWtH_^~j@g|A`Dmi@Ucz@jC_q@xI_p@bOao@nPca@~DmZxTk{@|a@gdA||@miDni@c~DbH{Op`@i`@xFsKrLqo@vIohAfEcK~P_N`GeTbEsi@lBefAiEwbB`Riu@tAsVwDkw@aCiI`Okd@`Fu\\uDqKjAcR{Jc_@{Ecd@}Rwq@iRmpEP_nAx]{xApEcaDmBun@uOu|@}MivAje@}oEjQ_w@jXqh@zZsa@vFsQn^_nDj[fUrId`@|M{@~YhLfKlYjS|Qhm@`|BrOtE|KyHdUdElRkNnHWhLdGdM`\\vHaDzHhUmH~ZCzIrTno@vRjDnLtKd^xGdWnmA|\\vdA|A`Q`c@taAzR~M|CnJtThjAj@d|@dHzZb\\pj@vAz^hDqAnJ}]nLcPzHdSvAl]dMkd@dIuEtEcMlKfChFhLbMqI|^jB~ESxAwCfJ~CzFmInHqAnHhRfDh]~F[hDrMzSeItGvEzErR~OyFxR~MpKpC`LdND~WzHjM~jAyAMeb@hB_JlNeSn\\aPxFaIlIe[ne@sr@fOkZhJob@`a@et@zIka@`B}WxVgaA|KuSfq@kNdS[~CrDl[m@tJkDpGyf@~AtFbCcLh`@ciDn\\uhBnHo{@xLw\\`Mg@xJsHjHqUmKqQ|CyGuEwYmKwQzFa^zJgT~e@}b@nHye@eD}Rz@wL|O_c@cAmQ`Dwn@lBwBtJuaBjTemAkC}zA|B_~@i@{dBkBeYeMcQyHiq@gAajAoN{q@mDg`AoJdOVge@aFaByAP`A|n@mI|m@Jt]pJjNmDlSlDmSqJkNKu]lI}m@aA}n@xAQ`F`BWfe@nJeOlDf`AnNzq@fA`jAxHhq@dMbQjBdYh@zdB}B~}@jC|zAkTdmAuJtaBmBvBaDvn@bAlQ}O~b@{@vLdD|RoHxe@_f@|b@{JfT{F`^lKvQtEvY}CxGlKpQyApHqE~KyJrHeR|Ak]nReKf^qBHA_CuUbBOa}@cGRk@sHi\\KaOgLgMce@vBiCl@wXkJyNeFsBcMkg@iGs`@|@s_B_B{O_EwFEkl@uYgmBel@kbBmC_Uta@scCu@oH`Ig|@hAwFvJaApXezA_C}CxA}K|d@iiBrAsRo@cXsAHxKaZnLggA`KeVrD_l@nUij@fI_}@yJ{iAtF}_ApGcQfPabAhUs_AzZosChd@{kAjC_p@fG{XnFao@j@gk@eNgg@uBg@qGfBgTkAaQdE_`@iJyRhKqa@wDgMyGie@cBkWbSqEkA_YeRo\\eJsAgT_GyOgByQij@xa@uGnNaI`GoNfB{CsByC`DkNiWiPeG}QrAqF_J{OkKyNvz@kCnxAkCxJo]tc@mCvIgHnf@qCxkAeRfr@kGfp@yPbl@iPzKmO|RyQjc@r@lb@lEr^Qx_AkJ|rAiG~^{Bxo@oFpW|Anv@iCho@eQfv@{Pro@_OzYeKhc@kLfLqIdR_`@bb@mNx_@UzE~Ez@e@fOvCdFhAve@oJfIaCy@KsHy^uB{J_MqNqAgKvUkFr_@kDzFmKvE\\hH_K|AiGjGuNx]iSd_AyEpEzFlgAgFl[bCzd@e@riAeCjQkIjRcD|Zs\\pXiBrSwRvQaEkCsLimB_Bw@qCbFuB_IuLdFmEhRwNfIvNgIlEiRtLeFtB~HpCcF~Av@rLhmBkNfIcJ^[hBuLoEsI`Z{GlCqBnJuIhDgJpVRfUgGlLItI~Fba@dErIlD`d@bRbc@hAfMpCbBcIxrAwKnk@_D|x@iXh^}E@eFoMwH`DqIoWiSkQcK{_@eCaY}Mgb@iG_DkGgOkDmWdCqOq^{pCkAwh@cMcs@bFwjBmJo`AyQq_EaLpGuu@|v@w@qFmQnA_J_JuE|DgJiIiTlCmEm@IiBwKfDy@uCcGpE_XmEoFfJiDc@eBiEaC~AyGiAgMxWgWg\\glAur@iGsHg[yv@oNo{@cXiYw|BetDap@m|@wH{VwF{f@mT}v@mIsK_YkFaWuPgCld@qAgCcDvHyKeHoLxJaStDeEyGyKh@}EuCqAlQ}E|AoGzg@wZjoAeEu@eCxBqBlMcMiJsEtWaJ`IeQ{I_AbF_G?MzFyHSIxF}Dl@Iz[}KhIaD`f@mE`EwE{H{CjAiByAaFdH`FeHhBxAzCkAvEzHlEaE`Daf@|KiIH{[|Dm@HyFxHRL{F~F?~@cFdQzI`JaIrEuWbMhJpBmMdCyBdEt@vZkoAnG{g@|E}AdAuPrBm@i@wMjBQjJgZOiJz\\}TpAya@rJgAtFcXvEeD~FuNvDnQvZ}`@~^mDvJ{WkDid@dKwV|JaI|@qh@bJcKlDnDzIgU~h@gb@rPD|MxFhDoc@~FgXd`@kx@lQ{z@dEyIz]c\\xAgTuKwgBpTqTCic@dDqJ~K_PnNz`AzSd\\p\\cNhOt@vLoBtVnCnCjQlZjAbF|Kn@pKrKnG`MfUbm@xQjJwTfBcQhJkNjDuN`]ig@|Qki@jYkyA`^qo@bE}AxInBhLmAvl@}ZbUiBfOu[dPml@zWknBfHqPlRyMpOkA~AtGvHlCvEfg@zUxj@fBne@rm@iYrF}O|LeObP{EvKsNdPul@lHaJ|Ced@|d@yk@j^gnAjIqKdLom@pFaMpBpDtRm`@zB~E{B_FuRl`@zJtQjTbUzKRnRgKzDjY~WlbA~OjZnThfA|RpSdF`W|Vtb@`InsAfDfM|OvHtV_MvMsMfg@n\\ru@p]vIxw@u@dd@|Bld@`Pvs@xQbX|UzO`KpS|`@nc@|Ohg@x_@vr@vKr[`s@~wA`Lf`AfKfd@bT~d@jOpCtE|_@hMrMtEf@n@tk@lEtCbFrWvBla@eIt_AoUhj@sD~k@aKdVoLfgAyK`ZrAIn@bXsArR}d@hiByA|K~B|CqXdzAwJ`AiAvFaIf|@t@nHya@heCjDfUbd@nkA|Xd}AdG~d@?jk@~DvF~AzO}@r_BlU~hAdFrBjJxNm@vXwBhCjD`SzG`QbJ|Ifa@tAj@rHbGSN`}@tUcB@~BpBIdKg^j]oRvWuExHaJhCiKn@aDmKqQ|CyGuEwYmKwQzFa^zJgT~e@}b@nHye@eD}Rz@wL|O_c@cAmQ`Dwn@lBwBtJuaBjTemAkC}zA|B_~@i@{dBkBeYeMcQyHiq@gAajAoN{q@mDg`AnCak@hSyg@zKaFbOf@yAyb@fDmcCrNkx@vXalCpR{AbRaNvT_d@|Jk\\f@sQsJ_t@jKoZ`@{TeR_q@T}[}AeDnDaRaGiDfCwU`M}[lBcSeAqh@bBwH{WeGrWxEiA~RrBkHbPFbO`NrDoY`FuF|CzCfFcP?wNvEkN`F_@xFhCbPgF~JdClJa@|g@{E~LqFvJrA`_@wPxLkX~IpJ|BvKgAnM~CzGjAj[fFlRt\\za@zVrz@lp@p_AjRlv@`CsDzSoE|PvAvg@n`@J{D|NlCvQlIhFvGX_ChKbi@v@bAz@kCx@lIfMdOhCbNhM~MqBrCpBsCjQfYzLp]hK~MdE|Q~IkBrK~BdI}GrBxNjQt]zBXri@}_@ZbEf]gPrr@lC`G|GxJw@bGoOtg@ol@hEo\\zQiCvB{DpA~BlK_HfLUnGaFf@xA`JwBP}Bdg@oHtQwIr{Aib@rWgQvAlEuCvSnB|UkRzr@hIm^vE_GnAoMsBi[rBaPtIiNx_@g\\jp@chARe\\bK_MqA_F~KwGtFcP~Fn@xBuCjSsvAfKpQlDgH~M`QpOzDfDmFtGNyAiOzCoi@`RqEjFkD|G{N`DCzFiH|A|AvF{\\|NyFdEiS`S}A`R|KbMaZ`JcLbCpAdE{XfDeBKyF|f@oSZ_FbMgFKoDjSmJf\\uw@vEnP~Ts]`CrHnFjBnTwG`[r@jUnOhh@s^`KeTpX_{AhSyRqCgUiCqC_C}j@bAo^nd@gm@`GzK`a@it@yA}EfLsR|BdEzWqh@zWwMtBoUjItHpEuMRcKrAtDrh@e`@jMsi@nJ}PfRiK~c@{h@dHsDp[mCpTpIj[ZxHqG~J{RjMmK`PeYvPgBdc@|TnQ|RlPqAnZ|QnP_FrY~@fYnP`LtM`Gb@r_@`VfLu@zErEjMab@vKa@tMcRbNjTSvVf[h@vEyDfLKnIrl@fKkC|IbOjIzFjb@kvCjNlQfScAdHaSpFhA|\\}FfGjGfK`Bd\\sr@|JxDnBqNfUzIlCfOnRtK|BrGfC_D~C`AzD_JvV{LpEgf@|b@{{Apj@kXhDqUdB_dAzB}NjDgI|JnIlOpArWsI}CcNqCx@LgClEa@jGoJpHy@fEdEbWkwA~YcoBeEwoBnRw{A_CyOh@aV_L{x@lCggAmD{LrDL`DoEnV}vA`OwwBhH_VrFczA`m@_tB~MaP|MgB~M`Cp`@fYthGhnJ|CMnQca@vGvEzXso@xN}LtIbAje@vf@n@gCbQiEbIoH~MvBv^wc@fBIdHbZnA}BdHfNx`AgRgSlDhDnjA{Lle@vHvVoBbJn}E|iOna@h{@zKrh@bEtEnWh@rClG`It@z`@`QpLjKhc@jnBvJcK`GtEzFkAbDxC~UmUvGr_@fYeTlNtBxDrPfDJH_C";
+function decodeLine(str){
+  const out=[];let i=0,lat=0,lon=0;
+  while(i<str.length){
+    let b,sh=0,res=0;
+    do{b=str.charCodeAt(i++)-63;res|=(b&0x1f)<<sh;sh+=5}while(b>=0x20);
+    lat+=(res&1)?~(res>>1):(res>>1);
+    sh=0;res=0;
+    do{b=str.charCodeAt(i++)-63;res|=(b&0x1f)<<sh;sh+=5}while(b>=0x20);
+    lon+=(res&1)?~(res>>1):(res>>1);
+    out.push([lat/1e5,lon/1e5]);
+  }
+  return out;
+}
+const ROUTE_PTS=decodeLine(ROUTE_LINE);
+
 const STOPS=(()=>{const a=[];let off=0;
   ROUTES.forEach((r,ri)=>{r.stops.forEach(s=>a.push({...s,abs:off+s.km,ri}));off+=r.stops[r.stops.length-1].km});
   return a})();
@@ -878,7 +898,8 @@ function vRoute(P,st){
     <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:18px">${r.ic}</span>
       <div style="flex:1"><b>${r.name}</b><div class="hint">${r.sub}</div></div></div>
     <div class="bar" style="height:6px;margin-top:12px"><i style="width:${Math.min(100,st.total/ROUTE_TOTAL*100)}%;background:var(--acc)"></i></div>
-    <div class="hint" style="margin-top:8px">Дорога открывается по мере бега: что впереди — видно только на шаг вперёд.</div>
+    ${routeMap(st.total, Math.min(528, innerWidth-32))}
+    <div class="hint" style="margin-top:8px">Дорога открывается по мере бега: что впереди — видно только на шаг вперёд. Маршрут настоящий пеший, по дорогам и тропам OpenStreetMap; километры — его реальная длина.</div>
   </div>
   <div class="card">
     <div style="margin-top:2px">
@@ -897,6 +918,89 @@ function vRoute(P,st){
   ${nextAwardCard(A)}
   ${vAwardGrid(A)}<div style="height:20px"></div>`;
 }
+
+/* ---------- карта ----------
+   Плитки настоящие, маршрут настоящий пеший — но библиотеку карт не тащим:
+   сетка картинок плюс наложенный SVG делают ровно то же на десятке строк.
+   Нет сети — плитки не придут, линия останется на тёмном фоне. */
+const TILE='https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const MAP_H=300;
+const merc=(lat,lon,z)=>{
+  const n=256*Math.pow(2,z), s=Math.sin(lat*Math.PI/180);
+  return [ (lon+180)/360*n, (0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n ];
+};
+/* Точка на линии по пройденным километрам: длина считается по самой геометрии,
+   поэтому метка стоит там же, где стояла бы на местности. */
+function pointAt(km){
+  const R=6371;
+  let acc=0;
+  for(let i=1;i<ROUTE_PTS.length;i++){
+    const a=ROUTE_PTS[i-1],b=ROUTE_PTS[i];
+    const dx=(b[1]-a[1])*Math.cos((a[0]+b[0])/2*Math.PI/180),dy=b[0]-a[0];
+    const d=Math.hypot(dx,dy)*Math.PI/180*R;
+    if(acc+d>=km){const t=d?(km-acc)/d:0;return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, i]}
+    acc+=d;
+  }
+  return [...ROUTE_PTS[ROUTE_PTS.length-1],ROUTE_PTS.length];
+}
+function routeMap(total,width){
+  const W=Math.max(280,Math.min(560,width||340)), H=MAP_H;
+  const lats=ROUTE_PTS.map(p=>p[0]),lons=ROUTE_PTS.map(p=>p[1]);
+  const bb=[Math.min(...lats),Math.min(...lons),Math.max(...lats),Math.max(...lons)];
+  // подбираем масштаб так, чтобы маршрут целиком попал в окно
+  let z=12;
+  for(;z>3;z--){
+    const a=merc(bb[2],bb[1],z),b=merc(bb[0],bb[3],z);
+    if(b[0]-a[0]<=W-16 && b[1]-a[1]<=H-16) break;
+  }
+  const c=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2];
+  const cp=merc(c[0],c[1],z);
+  const left=cp[0]-W/2, top=cp[1]-H/2;
+  const px=(lat,lon)=>{const m=merc(lat,lon,z);return [m[0]-left, m[1]-top]};
+
+  // сетка плиток, покрывающая окно
+  const t0=[Math.floor(left/256),Math.floor(top/256)];
+  const t1=[Math.floor((left+W)/256),Math.floor((top+H)/256)];
+  const r=(window.devicePixelRatio||1)>1?'@2x':'';
+  let tiles='';
+  for(let x=t0[0];x<=t1[0];x++)for(let y=t0[1];y<=t1[1];y++){
+    const n=Math.pow(2,z);
+    if(y<0||y>=n)continue;
+    const url=TILE.replace('{z}',z).replace('{x}',((x%n)+n)%n).replace('{y}',y).replace('{r}',r);
+    tiles+=`<img src="${url}" width="256" height="256" loading="lazy" alt=""
+      style="position:absolute;left:${x*256-left}px;top:${y*256-top}px">`;
+  }
+
+  const cut=pointAt(total);
+  const done=ROUTE_PTS.slice(0,cut[2]).concat([[cut[0],cut[1]]]);
+  const line=a=>a.map(p=>{const q=px(p[0],p[1]);return q[0].toFixed(1)+','+q[1].toFixed(1)}).join(' ');
+  const me=px(cut[0],cut[1]);
+  const next=STOPS.find(s=>total<s.abs);
+
+  return `<div style="position:relative;width:100%;max-width:${W}px;height:${H}px;margin:12px auto 0;
+      border-radius:14px;overflow:hidden;background:#12161c;border:1px solid var(--line)">
+    <div style="position:absolute;inset:0;filter:brightness(1.9) contrast(1.08) saturate(.7)">${tiles}</div>
+    <svg viewBox="0 0 ${W} ${H}" style="position:absolute;inset:0;width:100%;height:100%">
+      <polyline points="${line(ROUTE_PTS)}" fill="none" stroke="#0B0D10" stroke-opacity=".55"
+        stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+      <polyline points="${line(ROUTE_PTS)}" fill="none" stroke="#7E8A99" stroke-width="2"
+        stroke-dasharray="4 4" stroke-linejoin="round"/>
+      <polyline points="${line(done)}" fill="none" stroke="var(--acc)" stroke-width="3.2"
+        stroke-linejoin="round" stroke-linecap="round"/>
+      ${STOPS.map(st=>{
+        const q=px(st.ll[0],st.ll[1]);
+        if(total>=st.abs)return `<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="3" fill="var(--acc)" stroke="#0B0D10" stroke-width="1"/>`;
+        if(next&&next.abs===st.abs)return `<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="4.5" fill="#0B0D10" stroke="var(--acc)" stroke-width="2"/>`;
+        return `<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="1.8" fill="#8A94A2" opacity=".7"/>`;
+      }).join('')}
+      <circle cx="${me[0].toFixed(1)}" cy="${me[1].toFixed(1)}" r="10" fill="var(--acc)" opacity=".2"/>
+      <circle cx="${me[0].toFixed(1)}" cy="${me[1].toFixed(1)}" r="5" fill="var(--acc)" stroke="#0B0D10" stroke-width="2"/>
+    </svg>
+    <div style="position:absolute;right:5px;bottom:4px;font-size:8.5px;color:#6b7480;
+      background:rgba(11,13,16,.6);padding:1px 5px;border-radius:4px">© OpenStreetMap, CARTO</div>
+  </div>`;
+}
+
 /* строка места: пройденное с фактом, ближайшее — только именем */
 function stopRow(s,done,isNext,line,total,eta){
   return `<div style="display:flex;gap:12px">
