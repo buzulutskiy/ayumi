@@ -214,6 +214,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
 </div></nav>
 
 <input type="file" id="pickFile" multiple style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" onchange="readFiles(this)">
+<div id="fullmap" style="position:fixed;inset:0;z-index:60;display:none;background:#0B0D10"></div>
 <div class="sheet" id="sheet"><div class="bd" onclick="closeSheet()"></div><div class="pn" id="sheetBody"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -222,7 +223,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 14';
+const APP_VERSION='Аюми 15';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -628,6 +629,8 @@ function render(){
   app.innerHTML=v(P,st);
   fillProbe();
   app.scrollTop=0;
+  const mc=document.getElementById('mapCard');
+  if(mc)mc.onclick=()=>openFullMap(st.total);
   checkNew(st);
 }
 
@@ -945,70 +948,222 @@ function pointAt(km){
   }
   return [...ROUTE_PTS[ROUTE_PTS.length-1],ROUTE_PTS.length];
 }
-/* Карта показывает не весь путь, а участок «где я — где ближайшее место»:
-   на общем плане 850 км ничего не разглядеть, а тут видно и дорогу, и сколько
-   осталось. */
-function routeMap(total,width){
-  const W=Math.max(280,Math.min(560,width||340)), H=300, PAD=26;
+/* ---------- карта: общий движок ----------
+   Вид задаётся центром и целым масштабом. Плитки — сетка картинок, поверх
+   SVG. Дробного масштаба нет намеренно: с ним нужен свой рендер-цикл, а так
+   всё держится на перерисовке и остаётся простым. */
+function unmerc(x,y,z){
+  const n=256*Math.pow(2,z);
+  const lon=x/n*360-180, t=Math.PI-2*Math.PI*y/n;
+  return [180/Math.PI*Math.atan(0.5*(Math.exp(t)-Math.exp(-t))), lon];
+}
+function viewFit(pts,W,H,pad,maxZ){
+  const lats=pts.map(p=>p[0]),lons=pts.map(p=>p[1]);
+  const bb=[Math.min(...lats),Math.min(...lons),Math.max(...lats),Math.max(...lons)];
+  let z=maxZ;
+  for(;z>3;z--){
+    const p1=merc(bb[2],bb[1],z),p2=merc(bb[0],bb[3],z);
+    if(p2[0]-p1[0]<=W-pad*2 && p2[1]-p1[1]<=H-pad*2) break;
+  }
+  return {lat:(bb[0]+bb[2])/2, lon:(bb[1]+bb[3])/2, z};
+}
+function mapOrigin(v,W,H){
+  const c=merc(v.lat,v.lon,v.z);
+  return [c[0]-W/2, c[1]-H/2];
+}
+function mapTiles(v,W,H){
+  const [left,top]=mapOrigin(v,W,H);
+  const r=(window.devicePixelRatio||1)>1?'@2x':'';
+  const n=Math.pow(2,v.z);
+  let out='';
+  for(let x=Math.floor(left/256);x<=Math.floor((left+W)/256);x++)
+    for(let y=Math.floor(top/256);y<=Math.floor((top+H)/256);y++){
+      if(y<0||y>=n)continue;
+      const url=TILE.replace('{z}',v.z).replace('{x}',((x%n)+n)%n).replace('{y}',y).replace('{r}',r);
+      out+=`<img src="${url}" width="256" height="256" alt="" onerror="this.style.display='none'"
+        style="position:absolute;left:${x*256-left}px;top:${y*256-top}px">`;
+    }
+  return out;
+}
+/* Слой маршрута. tap=true — места кликабельны, каждое со своим номером. */
+function mapSvg(v,W,H,total,tap){
+  const [left,top]=mapOrigin(v,W,H);
+  const px=(lat,lon)=>{const m=merc(lat,lon,v.z);return [m[0]-left, m[1]-top]};
+  const cut=pointAt(total), me=[cut[0],cut[1]];
   const next=STOPS.find(s=>total<s.abs);
-  const cut=pointAt(total);
-  const me=[cut[0],cut[1]];
-  const to=next?next.ll:ROUTE_PTS[ROUTE_PTS.length-1];
-  // берём кусок геометрии от меня до ближайшего места — по нему и кадрируем
+  const line=a=>a.map(p=>{const q=px(p[0],p[1]);return q[0].toFixed(1)+','+q[1].toFixed(1)}).join(' ');
+  const seen=ROUTE_PTS.slice(0,cut[2]).concat([me]);
+  const mp=px(me[0],me[1]);
+  return `<svg viewBox="0 0 ${W} ${H}" style="position:absolute;inset:0;width:100%;height:100%">
+    <polyline points="${line(ROUTE_PTS)}" fill="none" stroke="#0B0D10" stroke-opacity=".45" stroke-width="7"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    <polyline points="${line(ROUTE_PTS)}" fill="none" stroke="#C9D4E0" stroke-width="3" stroke-dasharray="6 5"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    <polyline points="${line(seen)}" fill="none" stroke="var(--acc)" stroke-width="3.4"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    ${STOPS.map((st,i)=>{
+      const q=px(st.ll[0],st.ll[1]);
+      if(q[0]<-30||q[0]>W+30||q[1]<-30||q[1]>H+30)return '';
+      const done=total>=st.abs, isNext=next&&next.abs===st.abs;
+      const r=done?4.5:(isNext?6:3.5);
+      const fill=done?'var(--acc)':'#0B0D10';
+      const stroke=done?'#0B0D10':(isNext?'var(--acc)':'#8A94A2');
+      return `<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="${r}" fill="${fill}"
+        stroke="${stroke}" stroke-width="2"${tap?` data-stop="${i}" style="cursor:pointer"`:''}/>
+        ${tap?`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="16" fill="transparent" data-stop="${i}"/>`:''}`;
+    }).join('')}
+    <circle cx="${mp[0].toFixed(1)}" cy="${mp[1].toFixed(1)}" r="11" fill="var(--acc)" opacity=".2"/>
+    <circle cx="${mp[0].toFixed(1)}" cy="${mp[1].toFixed(1)}" r="5.5" fill="var(--acc)" stroke="#0B0D10" stroke-width="2"/>
+  </svg>`;
+}
+
+/* ---------- карта на вкладке ----------
+   Кадрируется по участку «где я — где ближайшее место»: на общем плане
+   850 км не разглядеть ничего. */
+function routeMap(total,width){
+  const W=Math.max(280,Math.min(560,width||340)), H=300;
+  const next=STOPS.find(s=>total<s.abs);
+  const cut=pointAt(total), me=[cut[0],cut[1]];
   const iTo=next?nearestIdx(next.ll):ROUTE_PTS.length-1;
   const seg=[me].concat(ROUTE_PTS.slice(cut[2],Math.max(cut[2],iTo+1)));
-  if(seg.length<2)seg.push(to);
-  const lats=seg.map(p=>p[0]),lons=seg.map(p=>p[1]);
-  const bb=[Math.min(...lats),Math.min(...lons),Math.max(...lats),Math.max(...lons)];
-  let z=14;                       // ближе не подходим: нужен контекст вокруг
-  for(;z>8;z--){
-    const p1=merc(bb[2],bb[1],z),p2=merc(bb[0],bb[3],z);
-    if(p2[0]-p1[0]<=W-PAD*2 && p2[1]-p1[1]<=H-PAD*2) break;
-  }
-  const c=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2];
-  const cp=merc(c[0],c[1],z);
-  const left=cp[0]-W/2, top=cp[1]-H/2;
-  const px=(lat,lon)=>{const m=merc(lat,lon,z);return [m[0]-left, m[1]-top]};
-
-  const t0=[Math.floor(left/256),Math.floor(top/256)];
-  const t1=[Math.floor((left+W)/256),Math.floor((top+H)/256)];
-  const r=(window.devicePixelRatio||1)>1?'@2x':'';
-  let tiles='';
-  for(let x=t0[0];x<=t1[0];x++)for(let y=t0[1];y<=t1[1];y++){
-    const n=Math.pow(2,z);
-    if(y<0||y>=n)continue;
-    const url=TILE.replace('{z}',z).replace('{x}',((x%n)+n)%n).replace('{y}',y).replace('{r}',r);
-    // без ленивой загрузки: плиток единицы, а внутри прокручиваемого блока
-    // она срабатывает через раз и карта остаётся пустой
-    tiles+=`<img src="${url}" width="256" height="256" alt="" onerror="this.style.display='none'"
-      style="position:absolute;left:${x*256-left}px;top:${y*256-top}px">`;
-  }
-  const line=a=>a.map(p=>{const q=px(p[0],p[1]);return q[0].toFixed(1)+','+q[1].toFixed(1)}).join(' ');
-  // немного пути назад — чтобы было видно, откуда пришёл
-  const back=ROUTE_PTS.slice(Math.max(0,cut[2]-220),cut[2]).concat([me]);
-  const mp=px(me[0],me[1]), tp=px(to[0],to[1]);
+  if(seg.length<2)seg.push(next?next.ll:me);
+  const v=viewFit(seg,W,H,26,14);
   const left_km=next?next.abs-total:0;
-  return `<div style="position:relative;width:100%;max-width:${W}px;height:${H}px;margin:12px auto 0;
-      border-radius:14px;overflow:hidden;background:#12161c;border:1px solid var(--line)">
-    <div style="position:absolute;inset:0;filter:brightness(.62) saturate(.62) contrast(1.02)">${tiles}</div>
-    <svg viewBox="0 0 ${W} ${H}" style="position:absolute;inset:0;width:100%;height:100%">
-      <polyline points="${line(seg)}" fill="none" stroke="#0B0D10" stroke-opacity=".5" stroke-width="7"
-        stroke-linejoin="round" stroke-linecap="round"/>
-      <polyline points="${line(seg)}" fill="none" stroke="#C9D4E0" stroke-width="3" stroke-dasharray="6 5"
-        stroke-linejoin="round" stroke-linecap="round"/>
-      <polyline points="${line(back)}" fill="none" stroke="var(--acc)" stroke-width="3.4"
-        stroke-linejoin="round" stroke-linecap="round"/>
-      ${next?`<circle cx="${tp[0].toFixed(1)}" cy="${tp[1].toFixed(1)}" r="7" fill="#0B0D10" stroke="var(--acc)" stroke-width="2.5"/>`:''}
-      <circle cx="${mp[0].toFixed(1)}" cy="${mp[1].toFixed(1)}" r="11" fill="var(--acc)" opacity=".2"/>
-      <circle cx="${mp[0].toFixed(1)}" cy="${mp[1].toFixed(1)}" r="5.5" fill="var(--acc)" stroke="#0B0D10" stroke-width="2"/>
-    </svg>
+  return `<button id="mapCard" style="display:block;position:relative;width:100%;max-width:${W}px;height:${H}px;
+      margin:12px auto 0;border-radius:14px;overflow:hidden;background:#12161c;border:1px solid var(--line);padding:0">
+    <div style="position:absolute;inset:0;filter:brightness(.62) saturate(.62) contrast(1.02)">${mapTiles(v,W,H)}</div>
+    ${mapSvg(v,W,H,total,false)}
     ${next?`<div style="position:absolute;left:8px;top:8px;background:rgba(11,13,16,.78);
       border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:12.5px">
       <b>${next.c}</b> <span style="color:var(--mut)">· ещё ${km(left_km)} км</span></div>`:''}
+    <div style="position:absolute;right:8px;top:8px;background:rgba(11,13,16,.78);border:1px solid var(--line);
+      border-radius:10px;padding:6px 9px;font-size:12px;color:var(--mut)">во весь экран ⤢</div>
     <div style="position:absolute;right:5px;bottom:4px;font-size:8.5px;color:#6b7480;
       background:rgba(11,13,16,.6);padding:1px 5px;border-radius:4px">© OpenStreetMap, CARTO</div>
-  </div>`;
+  </button>`;
 }
+
+/* ---------- карта во весь экран ----------
+   Тянется пальцем, масштабируется щипком, двойным касанием и кнопками.
+   По месту можно ткнуть — снизу выезжает его карточка. */
+let mapView=null, mapTotal=0;
+function openFullMap(total){
+  mapTotal=total;
+  const cut=pointAt(total), next=STOPS.find(s=>total<s.abs);
+  const seg=[[cut[0],cut[1]]].concat(next?[next.ll]:[]);
+  const W=innerWidth, H=innerHeight;
+  mapView=viewFit(seg.length>1?seg:[[cut[0],cut[1]],[cut[0]+.01,cut[1]+.01]],W,H,80,14);
+  const el=document.getElementById('fullmap');
+  el.style.display='block';
+  drawFullMap();
+}
+function closeFullMap(){document.getElementById('fullmap').style.display='none';mapView=null}
+function drawFullMap(){
+  const W=innerWidth,H=innerHeight;
+  const el=document.getElementById('fullmap');
+  el.innerHTML=`
+    <div id="mapLayer" style="position:absolute;inset:0;touch-action:none">
+      <div style="position:absolute;inset:0;filter:brightness(.62) saturate(.62) contrast(1.02)">${mapTiles(mapView,W,H)}</div>
+      ${mapSvg(mapView,W,H,mapTotal,true)}
+    </div>
+    <div style="position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 10px) 12px 10px;
+      display:flex;gap:8px;align-items:center;pointer-events:none">
+      <div style="background:rgba(11,13,16,.82);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12.5px">
+        ${km(mapTotal)} из ${ROUTE_TOTAL} км</div>
+      <button id="mapClose" style="margin-left:auto;pointer-events:auto;background:rgba(11,13,16,.82);
+        border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:13px">Закрыть</button>
+    </div>
+    <div style="position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom) + 76px);display:grid;gap:8px">
+      <button id="mapIn"  style="width:42px;height:42px;border-radius:12px;background:rgba(11,13,16,.85);
+        border:1px solid var(--line);font-size:20px">+</button>
+      <button id="mapOut" style="width:42px;height:42px;border-radius:12px;background:rgba(11,13,16,.85);
+        border:1px solid var(--line);font-size:20px">−</button>
+      <button id="mapMe"  style="width:42px;height:42px;border-radius:12px;background:rgba(11,13,16,.85);
+        border:1px solid var(--line);font-size:16px">◎</button>
+    </div>
+    <div id="mapInfo" style="position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);
+      background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:none"></div>
+    <div style="position:absolute;left:6px;bottom:2px;font-size:8.5px;color:#6b7480;
+      background:rgba(11,13,16,.6);padding:1px 5px;border-radius:4px">© OpenStreetMap, CARTO</div>`;
+  bindFullMap();
+}
+function showStop(i){
+  const st=STOPS[i], box=document.getElementById('mapInfo');
+  const done=mapTotal>=st.abs;
+  box.style.display='block';
+  box.innerHTML=`<div style="display:flex;gap:10px;align-items:baseline">
+      <b style="flex:1">${st.c}</b>
+      <span style="color:var(--mut);font-size:13px">${km(st.abs)} км</span></div>
+    <div class="hint" style="margin-top:6px">${done?st.f:`Ещё ${km(st.abs-mapTotal)} км — и место откроется.`}</div>
+    <button class="btn gh sm" style="margin-top:10px" onclick="document.getElementById('mapInfo').style.display='none'">Понятно</button>`;
+}
+function bindFullMap(){
+  const layer=document.getElementById('mapLayer');
+  const W=innerWidth,H=innerHeight;
+  document.getElementById('mapClose').onclick=closeFullMap;
+  document.getElementById('mapIn').onclick=()=>{mapView.z=Math.min(16,mapView.z+1);drawFullMap()};
+  document.getElementById('mapOut').onclick=()=>{mapView.z=Math.max(6,mapView.z-1);drawFullMap()};
+  document.getElementById('mapMe').onclick=()=>{const c=pointAt(mapTotal);mapView.lat=c[0];mapView.lon=c[1];drawFullMap()};
+  layer.querySelectorAll('[data-stop]').forEach(c=>{
+    c.addEventListener('click',e=>{e.stopPropagation();showStop(+c.dataset.stop)});
+  });
+
+  let pts=new Map(), start=null, moved=0, pinch0=0, lastTap=0;
+  const dist=()=>{const a=[...pts.values()];return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};
+  layer.addEventListener('pointerdown',e=>{
+    layer.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===1){start={x:e.clientX,y:e.clientY};moved=0}
+    if(pts.size===2)pinch0=dist();
+  });
+  layer.addEventListener('pointermove',e=>{
+    if(!pts.has(e.pointerId))return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===1&&start){
+      const dx=e.clientX-start.x, dy=e.clientY-start.y;
+      moved=Math.max(moved,Math.hypot(dx,dy));
+      layer.style.transform=`translate(${dx}px,${dy}px)`;
+    }
+  });
+  const finish=e=>{
+    pts.delete(e.pointerId);
+    if(pts.size===1&&pinch0){pinch0=0;return}
+    if(pts.size>0)return;
+    const t=layer.style.transform.match(/translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/);
+    layer.style.transform='';
+    if(t){
+      const dx=+t[1],dy=+t[2];
+      if(Math.abs(dx)>1||Math.abs(dy)>1){
+        const [left,top]=mapOrigin(mapView,W,H);
+        const c=unmerc(left+W/2-dx, top+H/2-dy, mapView.z);
+        mapView.lat=c[0];mapView.lon=c[1];
+        drawFullMap();return;
+      }
+    }
+    // двойное касание — приблизить
+    const now=Date.now();
+    if(moved<8){
+      if(now-lastTap<300){mapView.z=Math.min(16,mapView.z+1);lastTap=0;drawFullMap();return}
+      lastTap=now;
+    }
+    start=null;
+  };
+  layer.addEventListener('pointerup',finish);
+  layer.addEventListener('pointercancel',finish);
+  /* Щипок: дробного масштаба нет, поэтому меняем ступень по порогу. */
+  layer.addEventListener('pointermove',()=>{
+    if(pts.size!==2||!pinch0)return;
+    const d=dist();
+    if(d/pinch0>1.7&&mapView.z<16){mapView.z++;pinch0=d;drawFullMap()}
+    else if(d/pinch0<0.6&&mapView.z>6){mapView.z--;pinch0=d;drawFullMap()}
+  });
+  layer.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const z=mapView.z+(e.deltaY<0?1:-1);
+    mapView.z=Math.max(6,Math.min(16,z));drawFullMap();
+  },{passive:false});
+}
+
 /* ближайшая точка геометрии к месту — чтобы обрезать кусок ровно по нему */
 function nearestIdx(ll){
   let best=0,bd=Infinity;
