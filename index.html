@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Аюми">
 <meta name="theme-color" content="#0B0D10">
 <title>Аюми</title>
@@ -215,7 +217,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 5';
+const APP_VERSION='Аюми 6';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
