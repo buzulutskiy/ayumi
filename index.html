@@ -2,9 +2,12 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Именно black, а не black-translucent: в полупрозрачном режиме iOS
+     подкладывает страницу под строку состояния и на столько же не доводит её
+     до низа экрана — отсюда и брался стойкий отступ под нижней панелью. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
 <link rel="manifest" href="manifest.webmanifest">
@@ -39,7 +42,7 @@ body{
      рабочего стола бывает больше видимой области, и низ уезжает. */
   position:fixed;inset:0;
   display:flex;flex-direction:column;overflow:hidden;
-  padding-top:env(safe-area-inset-top);
+  padding-top:max(12px, env(safe-area-inset-top));
   background:var(--bg);color:var(--tx);
   font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Inter,system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;
@@ -256,7 +259,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 22';
+const APP_VERSION='Аюми 23';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
