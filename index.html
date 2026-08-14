@@ -1,310 +1,1525 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0d10">
-  <title>Аюми</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icon-180.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <!-- Заставки запуска: без них айфон рисует белый лист, пока грузится
-       приложение. Цвет тот же, что у фона, — перехода не видно. Размеры
-       обязаны совпадать с экраном точь-в-точь, иначе картинка не берётся.
-       Собираются командой: python3 tools/splash.py -->
-  <link rel="apple-touch-startup-image" href="splash-1179x2556.png"
-    media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="splash-1290x2796.png"
-    media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="splash-1170x2532.png"
-    media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="splash-1125x2436.png"
-    media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="splash-828x1792.png"
-    media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="splash-750x1334.png"
-    media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Аюми">
+<meta name="theme-color" content="#0B0D10">
+<title>Аюми</title>
+<style>
+:root{
+  --bg:#0B0D10;
+  --card:#14181E;
+  --card2:#1B2027;
+  --line:#252C35;
+  --tx:#E9ECF1;
+  --mut:#8892A0;
+  --acc:#D8FF4A;
+  --acc-dim:#7E9420;
+  --blue:#5AC8FA;
+  --warn:#FFB020;
+  --bad:#FF6B5A;
+  --r:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+/* Каркас приложения: сама страница не прокручивается, прокручивается только
+   середина. Так нижняя панель перестаёт быть плавающей и на iOS не прыгает —
+   position:fixed там переставляется лишь по окончании инерции прокрутки. */
+html{height:100%}
+body{
+  height:100%;height:100dvh;
+  display:flex;flex-direction:column;overflow:hidden;
+  padding-top:env(safe-area-inset-top);
+  background:var(--bg);color:var(--tx);
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none;
+}
+#app{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;padding-bottom:24px}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-0.02em}
+h1{font-size:28px}
+h2{font-size:19px}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,select{font:inherit;color:inherit}
 
-  <style>
-    /* ══════════ Палитра ══════════
-       Одно место, где живут цвета. Всё остальное берёт их отсюда — поэтому
-       новая тема это правка одного блока, а не поиск по всему файлу. */
-    :root {
-      color-scheme: dark;
-      --bg: #0b0d10;
-      --ink: #e9ecf1;
-      --muted: #8892a0;
-      --dim: #5c6672;
-      --accent: #d8ff4a;
-      --accent-2: #a8e83a;
-      --green: #4ade80;
-      --red: #ff6b5a;
+/* header */
+.top{padding:14px 0 10px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.top .sub{color:var(--mut);font-size:13px}
 
-      --glass: rgba(255, 255, 255, 0.055);
-      --glass-2: rgba(255, 255, 255, 0.09);
-      --glass-line: rgba(255, 255, 255, 0.09);
-      --track: rgba(255, 255, 255, 0.09);
-      --panel: rgba(22, 27, 34, 0.62);
-      --bar: rgba(16, 19, 24, 0.74);
-      --sheet: rgba(20, 24, 30, 0.92);
-      --shadow: rgba(0, 0, 0, 0.35);
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.card.flat{background:transparent;border:0;padding:0}
+.lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);font-weight:600}
 
-      --safe-t: env(safe-area-inset-top, 0px);
-      --safe-b: env(safe-area-inset-bottom, 0px);
-    }
-    /* Светлая тема — пример того, как заводится вторая: переопределяются
-       только токены, ни одно правило ниже не меняется. */
-    :root[data-theme="light"] {
-      color-scheme: light;
-      --bg: #f6f4fa; --ink: #1b1826; --muted: #5f5a70; --dim: #8b869c;
-      --accent: #6b8c00; --accent-2: #4f7000;
-      --glass: rgba(0, 0, 0, 0.04); --glass-2: rgba(0, 0, 0, 0.07);
-      --glass-line: rgba(0, 0, 0, 0.09); --track: rgba(0, 0, 0, 0.08);
-      --panel: rgba(255, 255, 255, 0.7); --bar: rgba(255, 255, 255, 0.78);
-      --sheet: rgba(255, 255, 255, 0.94); --shadow: rgba(0, 0, 0, 0.12);
-    }
+/* today hero */
+.hero{position:relative;overflow:hidden;background:linear-gradient(160deg,#1C2430 0%,#14181E 60%);border:1px solid var(--line);border-radius:22px;padding:20px;margin-bottom:12px}
+.hero .glow{position:absolute;right:-60px;top:-70px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(216,255,74,.18),transparent 68%);pointer-events:none}
+.hero .type{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;letter-spacing:.04em;text-transform:uppercase;color:var(--bg);background:var(--acc);padding:5px 10px;border-radius:999px}
+.hero .type.rest{background:var(--card2);color:var(--mut)}
+.hero .type.blue{background:var(--blue)}
+.big{font-size:56px;line-height:1;font-weight:700;letter-spacing:-0.045em;margin:14px 0 2px;font-variant-numeric:tabular-nums}
+.big span{font-size:22px;font-weight:600;color:var(--mut);letter-spacing:0}
+.hero .det{color:var(--mut);font-size:14px;margin-top:8px}
+.hero .why{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);color:var(--mut);font-size:13px}
+.watch{margin-top:15px;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:12px;padding:12px 13px}
+.wl{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;font-variant-numeric:tabular-nums;padding:5px 0;color:var(--mut)}
+.wl b{color:var(--tx);font-weight:600;text-align:right}
+.wl+.wl{border-top:1px dashed rgba(255,255,255,.07)}
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    /* Интерфейс не выделяется — как в родном приложении. Тексты, которые
-       хочется скопировать, возвращают выделение себе сами. */
-    body { -webkit-user-select: none; user-select: none; }
-    .pick-text, input, textarea, select { -webkit-user-select: text; user-select: text; }
+.btn{display:block;width:100%;text-align:center;background:var(--acc);color:#131600;font-weight:650;padding:15px;border-radius:14px;font-size:16px}
+.btn:active{opacity:.75}
+.btn.sec{background:var(--card2);color:var(--tx);border:1px solid var(--line)}
+.btn.gh{background:transparent;color:var(--mut);border:1px solid var(--line)}
+.btn.sm{padding:11px;font-size:14px;border-radius:11px}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
 
-    html { background: #0b0d10; height: 100%; touch-action: manipulation; }
-    html, body { margin: 0; overflow-x: hidden; }
-    body {
-      position: fixed; inset: 0;
-      display: flex; flex-direction: column; overflow: hidden;
-      font-family: ui-rounded, -apple-system, "SF Pro Rounded", system-ui, "Segoe UI", sans-serif;
-      background: var(--bg); color: var(--ink);
-      font-size: 16px; line-height: 1.4;
-    }
-    button, input, textarea, select { font: inherit; color: inherit; }
-    button { border: 0; background: none; cursor: pointer; }
-    h1, h2, h3, p { margin: 0; }
+/* stat grid */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.st{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 10px}
+.st .v{font-size:22px;font-weight:680;letter-spacing:-0.03em;font-variant-numeric:tabular-nums}
+.st .k{font-size:11px;color:var(--mut);margin-top:2px}
 
-    /* ══════════ Скелет ══════════ */
-    .app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-    header {
-      display: flex; align-items: center; gap: 10px;
-      padding: calc(var(--safe-t) + 10px) 16px 8px;
-      flex: none;
-    }
-    .logo { font-weight: 850; font-size: 1.15rem; display: flex; align-items: baseline; gap: 7px; }
-    .logo em {
-      font-style: normal;
-      background: linear-gradient(120deg, var(--accent), var(--accent-2));
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .logo i { font-style: normal; font-size: 0.7rem; color: var(--dim); letter-spacing: 0.18em; }
-    .gear {
-      margin-left: auto; width: 38px; height: 38px; border-radius: 12px;
-      background: var(--glass); border: 1px solid var(--glass-line); font-size: 1rem;
-    }
-    /* Точка состояния синхронизации: цвет говорит, что происходит с данными */
-    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); flex: none; }
-    .sync-dot.ok { background: var(--green); }
-    .sync-dot.busy { background: var(--accent); animation: pulse 1s infinite; }
-    .sync-dot.err { background: var(--red); }
-    .sync-dot.off { background: var(--dim); }
-    @keyframes pulse { 50% { opacity: 0.25; } }
+/* week strip */
+.week{display:flex;gap:6px;margin-top:4px}
+.day{flex:1;border-radius:12px;background:var(--card2);border:1px solid var(--line);padding:9px 4px;text-align:center;min-width:0}
+.day.done{background:rgba(216,255,74,.13);border-color:var(--acc-dim)}
+.day.today{border-color:var(--tx)}
+.day.rest{opacity:.42}
+.day .d{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.day .n{font-size:14px;font-weight:650;margin-top:3px;font-variant-numeric:tabular-nums}
+.day.done .n{color:var(--acc)}
 
-    #view { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 16px 18px; }
+/* plan list */
+.wk{border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden;background:var(--card)}
+.wk>.h{display:flex;align-items:center;gap:10px;padding:13px 14px;width:100%;text-align:left}
+.wk>.h .ttl{flex:1;min-width:0}
+.wk>.h .ttl b{font-weight:650}
+.wk>.h .ttl small{display:block;color:var(--mut);font-size:12px}
+.wk.now{border-color:var(--acc-dim);background:linear-gradient(180deg,rgba(216,255,74,.06),transparent)}
+.wk .km{font-variant-numeric:tabular-nums;font-weight:650;font-size:15px}
+.wk .body{border-top:1px solid var(--line);padding:4px 14px 10px;display:none}
+.wk.open .body{display:block}
+.ses{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ses:last-child{border-bottom:0}
+.ses .dot{width:9px;height:9px;border-radius:50%;background:var(--mut);flex:none}
+.ses.easy .dot{background:#4C5A6B}.ses.long .dot{background:var(--acc)}
+.ses.tempo .dot{background:var(--blue)}.ses.intervals .dot{background:var(--warn)}
+.ses .t{flex:1;min-width:0;font-size:14px}
+.ses .t small{display:block;color:var(--mut);font-size:12px}
+.ses .k{font-variant-numeric:tabular-nums;color:var(--mut);font-size:14px}
+.ses.ok .k{color:var(--acc)}
+.chev{color:var(--mut);font-size:13px;transition:transform .15s}
+.wk.open .chev{transform:rotate(90deg)}
 
-    .tabbar {
-      flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
-      padding: 8px 6px calc(var(--safe-b) + 8px);
-      background: var(--bar); backdrop-filter: blur(18px);
-      border-top: 1px solid var(--glass-line);
-    }
-    .tabbar button {
-      display: grid; gap: 3px; justify-items: center;
-      font-size: 0.66rem; color: var(--dim); padding: 4px 2px;
-    }
-    .tabbar button i { font-style: normal; font-size: 1.1rem; line-height: 1; }
-    .tabbar button.on { color: var(--accent); }
+/* charts */
+svg{display:block;width:100%;height:auto;overflow:visible}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:10px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 
-    /* ══════════ Кирпичи ══════════ */
-    .panel {
-      background: var(--panel); border: 1px solid var(--glass-line);
-      border-radius: 20px; padding: 16px; margin-bottom: 14px;
-      backdrop-filter: blur(12px);
-    }
-    .blk-head { margin: 0 0 12px; font-size: 0.92rem; font-weight: 800; }
-    .group {
-      margin: 18px 0 8px; font-size: 0.68rem; font-weight: 800;
-      text-transform: uppercase; letter-spacing: 0.1em; color: var(--dim);
-    }
-    .row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 14px; border-radius: 16px;
-      background: var(--glass); border: 1px solid var(--glass-line);
-      margin-bottom: 8px; width: 100%; text-align: left;
-    }
-    .row i { font-style: normal; font-size: 1.15rem; flex: none; }
-    .row b { font-size: 0.86rem; font-weight: 700; }
-    .row em { font-style: normal; font-size: 0.72rem; color: var(--dim); display: block; margin-top: 1px; }
-    .row .go { margin-left: auto; color: var(--dim); }
+/* awards */
+.aw{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.a{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center;position:relative;overflow:hidden}
+.a .ic{font-size:26px;filter:grayscale(1);opacity:.3}
+.a .t{font-size:11.5px;font-weight:600;margin-top:6px;line-height:1.25}
+.a .p{font-size:10px;color:var(--mut);margin-top:3px;font-variant-numeric:tabular-nums}
+.a.got{background:linear-gradient(170deg,rgba(216,255,74,.13),var(--card));border-color:var(--acc-dim)}
+.a.got .ic{filter:none;opacity:1}
+.a.got .t{color:var(--tx)}
+.bar{height:3px;background:var(--line);border-radius:2px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--mut);border-radius:2px}
 
-    .btn {
-      display: block; width: 100%; padding: 13px 16px; border-radius: 15px;
-      background: var(--glass-2); border: 1px solid var(--glass-line);
-      font-size: 0.88rem; font-weight: 700; text-align: center;
-    }
-    .btn.gold { color: #131600; }
-    .btn.gold {
-      background: linear-gradient(120deg, var(--accent), var(--accent-2));
-      color: #131600; border-color: transparent;
-    }
-    .btn.danger { color: var(--red); }
-    .btn:disabled { opacity: 0.45; }
-    .btn + .btn { margin-top: 8px; }
+/* list of runs */
+.rn{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.rn:last-child{border-bottom:0}
+.rn .dt{width:46px;flex:none;text-align:center}
+.rn .dt b{display:block;font-size:17px;font-weight:650;line-height:1;font-variant-numeric:tabular-nums}
+.rn .dt small{font-size:10px;color:var(--mut);text-transform:uppercase}
+.rn .m{flex:1;min-width:0}
+.rn .m b{font-weight:650;font-variant-numeric:tabular-nums}
+.rn .m small{display:block;color:var(--mut);font-size:12px}
+.rn .x{color:var(--mut);padding:6px;font-size:15px}
 
-    .note-input {
-      width: 100%; padding: 12px 13px; border-radius: 14px;
-      background: var(--glass); border: 1px solid var(--glass-line);
-      font-size: 16px;                        /* меньше — и айфон приближает экран */
-    }
-    .note-input::placeholder { color: var(--dim); }
+/* tabbar
+   Панель намеренно без backdrop-filter: на iOS размытие уводит фиксированный
+   элемент в отдельный слой, и при инерционной прокрутке длинных вкладок он
+   отрывается от низа экрана. Сплошной фон плюс собственный слой через
+   translateZ решают это насовсем. */
+.tabbar{flex:none;background:var(--bg);border-top:1px solid var(--line);
+  padding:6px 0 10px;                                   /* запасной вариант, если env() не понят */
+  padding-bottom:max(10px, calc(env(safe-area-inset-bottom) * .45))}
+.tabbar .in{max-width:560px;margin:0 auto;display:flex}
+.tb{flex:1;text-align:center;color:var(--mut);font-size:10.5px;font-weight:600;padding:2px 0}
+.tb .i{display:block;font-size:19px;line-height:1.25;filter:grayscale(1);opacity:.55}
+.tb.on{color:var(--acc)}
+.tb.on .i{filter:none;opacity:1}
 
-    .empty-note { padding: 22px 14px; text-align: center; font-size: 0.78rem; color: var(--dim); }
-
-    /* Полоса состояния: ошибка синхронизации, обновление, офлайн */
-    #banner:empty { display: none; }
-    .banner {
-      margin: 0 0 12px; padding: 12px 14px; border-radius: 16px;
-      display: flex; align-items: center; gap: 12px;
-      font-size: 0.76rem; line-height: 1.35;
-      background: var(--glass); border: 1px solid var(--glass-line);
-    }
-    .banner.warn { border-color: rgba(248, 113, 113, 0.4); }
-    .banner.news { border-color: rgba(216, 255, 74, 0.4); }
-    .banner > span { flex: 1; min-width: 0; }
-    .banner .btn { width: auto; margin-left: auto; padding: 8px 13px; flex: none; }
-
-    /* ══════════ Своё ══════════ */
-    /* Главное число занятия: минуты бега. Крупно, потому что это
-       единственное, ради чего экран открывают. */
-    .big { font-size: 3.2rem; font-weight: 850; letter-spacing: -0.04em; line-height: 1; }
-    .big span { font-size: 1.15rem; font-weight: 700; color: var(--muted); letter-spacing: 0; }
-    .tag { display: inline-flex; align-items: center; font-size: 0.66rem; font-weight: 800;
-      letter-spacing: 0.06em; text-transform: uppercase; color: #131600;
-      background: var(--accent); padding: 5px 10px; border-radius: 999px; }
-    .tag.cool { background: #5ac8fa; }
-    .sub { color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
-    .sub + .sub { margin-top: 10px; }
-    .hr { height: 1px; background: var(--glass-line); margin: 13px 0; }
-    /* Блок «на часы»: строки ровно те, что выставляются в таймере */
-    .watch { background: rgba(0,0,0,0.26); border: 1px solid var(--glass-line);
-      border-radius: 14px; padding: 12px 13px; margin-top: 14px; }
-    .wl { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0;
-      font-size: 0.82rem; font-variant-numeric: tabular-nums; color: var(--muted); }
-    .wl + .wl { border-top: 1px dashed rgba(255,255,255,0.07); }
-    .wl b { color: var(--ink); font-weight: 750; text-align: right; }
-    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
-    .stat { background: var(--glass); border: 1px solid var(--glass-line);
-      border-radius: 16px; padding: 12px 10px; }
-    .stat b { display: block; font-size: 1.32rem; font-weight: 800; letter-spacing: -0.03em;
-      font-variant-numeric: tabular-nums; }
-    .stat em { font-style: normal; font-size: 0.66rem; color: var(--dim); }
-    .bar { height: 6px; background: var(--track); border-radius: 3px; overflow: hidden; }
-    .bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
-    svg { display: block; width: 100%; height: auto; }
-    /* Лента мест на маршруте */
-    .stop { display: flex; gap: 12px; }
-    .stop .line { width: 12px; flex: none; display: flex; flex-direction: column; align-items: center; }
-    .stop .dot { width: 11px; height: 11px; border-radius: 50%; margin-top: 4px; flex: none; background: var(--track); }
-    .stop.done .dot { background: var(--accent); }
-    .stop.next .dot { background: transparent; border: 2px solid var(--accent); }
-    .stop .rail { flex: 1; width: 2px; background: var(--track); margin: 3px 0; }
-    .stop.done .rail { background: var(--accent-2); opacity: .5; }
-    .stop .body { flex: 1; min-width: 0; padding-bottom: 16px; }
-    .stop .body .top { display: flex; justify-content: space-between; gap: 8px; }
-    .stop .body b { font-size: 0.9rem; }
-    .stop .body .km { font-size: 0.76rem; color: var(--dim); font-variant-numeric: tabular-nums; flex: none; }
-    /* Медали */
-    .aw { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .aw > div { background: var(--glass); border: 1px solid var(--glass-line);
-      border-radius: 16px; padding: 12px 8px; text-align: center; }
-    .aw .ic { font-size: 1.6rem; filter: grayscale(1); opacity: .32; }
-    .aw .got .ic, .aw > div.got .ic { filter: none; opacity: 1; }
-    .aw > div.got { border-color: rgba(216,255,74,.35); background: rgba(216,255,74,.07); }
-    .aw .t { font-size: 0.7rem; font-weight: 750; margin-top: 6px; line-height: 1.25; }
-    .aw .p { font-size: 0.6rem; color: var(--dim); margin-top: 3px; font-variant-numeric: tabular-nums; }
-
-    /* ══════════ Шторка ══════════ */
-    #sheet {
-      position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-end;
-      background: rgba(0, 0, 0, 0.5); opacity: 0; pointer-events: none;
-      transition: opacity 0.22s ease;
-    }
-    #sheet.show { opacity: 1; pointer-events: auto; }
-    .sheet-box {
-      width: 100%; max-height: 86vh; overflow-y: auto;
-      padding: 16px 16px calc(var(--safe-b) + 16px);
-      border-radius: 24px 24px 0 0;
-      background: var(--sheet); backdrop-filter: blur(24px);
-      border-top: 1px solid var(--glass-line);
-      transform: translateY(14px); transition: transform 0.22s ease;
-    }
-    #sheet.show .sheet-box { transform: none; }
-    .sheet-grab { width: 38px; height: 4px; border-radius: 2px; background: var(--track); margin: 0 auto 14px; }
-    .sheet-actions { margin-top: 14px; display: grid; gap: 8px; }
-
-    /* ══════════ Всплывающая строка ══════════ */
-    #toast {
-      position: fixed; left: 50%; bottom: calc(var(--safe-b) + 78px);
-      transform: translate(-50%, 10px); z-index: 120;
-      max-width: 82vw; padding: 10px 16px; border-radius: 14px;
-      background: var(--sheet); border: 1px solid var(--glass-line);
-      box-shadow: 0 10px 30px var(--shadow);
-      font-size: 0.78rem; text-align: center;
-      opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
-    }
-    #toast.show { opacity: 1; transform: translate(-50%, 0); }
-
-    /* ══════════ Заставка ══════════
-       Видна сразу, уходит по первой отрисовке — чтобы вместо белого листа
-       был знак приложения. */
-    #boot {
-      position: fixed; inset: 0; z-index: 200;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-      background: var(--bg); transition: opacity 0.28s ease;
-    }
-    #boot.gone { opacity: 0; pointer-events: none; }
-    #boot em {
-      font-style: normal; font-weight: 850; font-size: 1.6rem;
-      background: linear-gradient(120deg, var(--accent), var(--accent-2));
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    #boot i { font-style: normal; font-size: 0.78rem; color: var(--dim); letter-spacing: 0.22em; }
-    #boot span { margin-top: 14px; width: 92px; height: 3px; border-radius: 2px; background: var(--track); overflow: hidden; position: relative; }
-    #boot span::after {
-      content: ""; position: absolute; inset: 0; width: 40%; border-radius: 2px;
-      background: linear-gradient(90deg, var(--accent-2), var(--accent));
-      animation: bootRun 1.1s ease-in-out infinite;
-    }
-    @keyframes bootRun { 0% { left: -40%; } 100% { left: 100%; } }
-    @media (prefers-reduced-motion: reduce) { #boot span::after { animation: none; left: 0; width: 100%; } }
-  </style>
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:50;display:none}
+.sheet.on{display:block}
+.sheet .bd{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.sheet .pn{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;
+  padding:8px 16px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto;
+  max-width:560px;margin:0 auto;animation:up .25s cubic-bezier(.2,.9,.3,1)}
+@keyframes up{from{transform:translateY(24px);opacity:.4}}
+.grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 14px}
+.f{margin-bottom:14px}
+.f label{display:block;font-size:13px;color:var(--mut);margin-bottom:6px}
+.f input,.f select{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px 14px;font-size:16px}
+.f input:focus,.f select:focus{outline:none;border-color:var(--acc-dim)}
+.seg{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;padding:10px 4px;border-radius:9px;font-size:14px;color:var(--mut);font-weight:600}
+.seg button.on{background:var(--acc);color:#131600}
+.hint{color:var(--mut);font-size:12.5px;line-height:1.5}
+.ol{color:var(--mut);font-size:13px;line-height:1.6;padding-left:20px;margin:8px 0}
+.empty{text-align:center;color:var(--mut);padding:34px 16px;font-size:14px}
+.tag{display:inline-block;font-size:11px;padding:3px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line);color:var(--mut)}
+.upd{flex:none;display:flex;align-items:center;gap:10px;background:var(--acc);color:#131600;
+  padding:10px 16px;font-size:13.5px;font-weight:600;line-height:1.35}
+.upd span{flex:1;min-width:0}
+.upd button{flex:none;background:#131600;color:var(--acc);font-weight:650;font-size:13px;
+  padding:7px 12px;border-radius:9px}
+#banner:empty{display:none}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom));
+  background:var(--tx);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:99;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
+</style>
 </head>
 <body>
-  <div id="boot" aria-hidden="true"><em>Аюми</em><i>歩み</i><span></span></div>
 
-  <main class="app">
-    <header>
-      <div class="logo"><em>Аюми</em><i>歩み</i></div>
-      <div class="sync-dot" id="syncDot"></div>
-      <button class="gear" id="gearBtn" aria-label="Настройки">⚙️</button>
-    </header>
-    <div id="view"></div>
-    <nav class="tabbar" id="tabbar"></nav>
-  </main>
+<div id="banner"></div>
+<div id="app" class="wrap"></div>
 
-  <div id="sheet"><div class="sheet-box" id="sheetBox"></div></div>
-  <div id="toast"></div>
+<nav class="tabbar"><div class="in">
+  <button class="tb" data-tab="today"><i class="i">🎯</i>Сегодня</button>
+  <button class="tb" data-tab="plan"><i class="i">📋</i>Занятия</button>
+  <button class="tb" data-tab="stats"><i class="i">📈</i>Прогресс</button>
+  <button class="tb" data-tab="route"><i class="i">🗺</i>Путь</button>
+  <button class="tb" data-tab="more"><i class="i">⚙️</i>Ещё</button>
+</div></nav>
 
-  <script src="app.js"></script>
+<input type="file" id="pickFile" multiple style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" onchange="readFiles(this)">
+<div class="sheet" id="sheet"><div class="bd" onclick="closeSheet()"></div><div class="pn" id="sheetBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==================== версия ====================
+   Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
+   Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
+   за старую копию неделями, и человек не понимает, почему правки не приехали. */
+const APP_VERSION='Аюми 3';
+let newVersion='';
+/* Регистрируем обработчик: без него iOS держится за старую копию страницы,
+   и никакая проверка версии до человека не доедет. */
+if('serviceWorker' in navigator)
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+async function checkForUpdate(){
+  if(!navigator.onLine)return;
+  try{
+    const r=await fetch('version.json?ts='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    const j=await r.json();
+    const tried=sessionStorage.getItem('ayumi.tried');
+    if(j.version&&j.version!==APP_VERSION&&j.version!==tried){
+      newVersion=j.version;renderBanner();maybeAutoUpdate();
+    }else if(newVersion){newVersion='';renderBanner()}
+  }catch(e){}
+}
+function renderBanner(){
+  const b=document.getElementById('banner');
+  if(!b)return;
+  b.innerHTML=newVersion
+    ? `<div class="upd"><span>Есть новая версия — ${newVersion}. Сейчас стоит ${APP_VERSION}.</span>
+       <button onclick="forceUpdate()">Обновить</button></div>`
+    : '';
+}
+/* Полная перезагрузка мимо кэша: метка версии уходит в адрес, файлы тянутся заново. */
+async function forceUpdate(){
+  toast('Обновляю…');
+  try{sessionStorage.setItem('ayumi.tried',newVersion||'')}catch(e){}
+  const cleanup=(async()=>{
+    try{
+      if(window.caches){
+        const keys=await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+      }
+      await Promise.all(['index.html','sw.js','version.json'].map(
+        f=>fetch(f,{cache:'reload'}).catch(()=>{})));
+      if('serviceWorker' in navigator){
+        const r=await navigator.serviceWorker.getRegistration();
+        if(r)await r.update().catch(()=>{});
+      }
+    }catch(e){}
+  })();
+  // если что-то из этого зависнет — на iOS такое бывает, — всё равно перезагружаемся
+  await Promise.race([cleanup,new Promise(r=>setTimeout(r,2500))]);
+  const url=location.origin+location.pathname+'?v='+encodeURIComponent(newVersion||Date.now());
+  location.replace(url);
+  setTimeout(()=>{location.href=url},1200);
+}
+/* Одна попытка обновиться за сессию: не помогло — остаётся полоска с кнопкой. */
+function maybeAutoUpdate(){
+  if(!newVersion)return;
+  try{
+    if(sessionStorage.getItem('ayumi.auto')===newVersion)return;
+    sessionStorage.setItem('ayumi.auto',newVersion);
+  }catch(e){return}
+  forceUpdate();
+}
+
+/* ==================== хранилище ==================== */
+const KEY='ayumi.v1';
+let S=load();
+function load(){
+  try{const r=JSON.parse(localStorage.getItem(KEY));
+    if(r&&r.runs){if(!r.profile)r.profile=defaultProfile();return r}}catch(e){}
+  return {profile:defaultProfile(),runs:[],tab:'today',seen:[]};
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(S))}
+
+/* ==================== даты ==================== */
+const DOW=['пн','вт','ср','чт','пт','сб','вс'];
+const MON=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+function iso(d){const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())}
+function fromISO(s){const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)}
+function today(){const d=new Date();d.setHours(0,0,0,0);return d}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);x.setHours(0,0,0,0);return x}
+function monday(d){const x=new Date(d);const w=(x.getDay()+6)%7;x.setDate(x.getDate()-w);x.setHours(0,0,0,0);return x}
+function dow(d){return (d.getDay()+6)%7}
+function daysBetween(a,b){return Math.round((b-a)/86400000)}
+function fmtDate(d){return d.getDate()+' '+MON[d.getMonth()]}
+
+/* ==================== числа ==================== */
+function km(x){const v=Math.round(x*10)/10;return (v%1===0?String(v):v.toFixed(1).replace('.',','))}
+function pace(minutes,dist){if(!minutes||!dist)return null;const p=minutes/dist;const m=Math.floor(p);const s=Math.round((p-m)*60);return m+':'+String(s===60?0:s).padStart(2,'0')}
+function plural(n,a,b,c){const m=n%100;if(m>=11&&m<=14)return c;const k=n%10;return k===1?a:(k>=2&&k<=4?b:c)}
+
+function defaultProfile(){return {created:iso(today())}}
+
+/* ==================== маршруты ====================
+   Набеганные километры откладываются по реальной карте. Каждая остановка — факт. */
+const ROUTES=[
+ {name:'Карельский перешеек',sub:'от города вдоль залива на Выборг, через перешеек к Ладоге и обратно',ic:'🌲',stops:[
+  {km:12, c:'Лахта',                f:'Отсюда начинается перешеек — полоса суши между Финским заливом и Ладогой шириной от 45 до 110 километров. Всё, что дальше, лежит на ней.'},
+  {km:18, c:'Ольгино',              f:'Дюны вдоль берега — древние пляжи Литоринового моря, которое стояло здесь после ледника и было заметно выше нынешнего залива.'},
+  {km:25, c:'Лисий Нос',            f:'Мелководье уходит от берега на сотни метров. Зимой по нему намерзает такой лёд, что до Кронштадта в старину ездили на санях.'},
+  {km:34, c:'Сестрорецк',           f:'Оружейный завод, основанный Петром, работал больше двух веков. Ради заводских нужд запрудили реку Сестру — так появился Разлив.'},
+  {km:38, c:'Разлив',               f:'Тот самый шалаш. Место обозначено гранитным шалашом-памятником 1928 года — редкий случай, когда в граните повторили сено.'},
+  {km:42, c:'Сестрорецкое болото',  f:'Верховое болото, которому около восьми тысяч лет: оно старше почти всего, что вокруг, и его ни разу не осушали. Ледник ушёл — болото осталось.'},
+  {km:46, c:'Солнечное',            f:'Сосны на песке держатся корнями у самой поверхности. Поэтому по здешним дюнам нельзя ездить: колея убивает лес быстрее пожара.'},
+  {km:50, c:'Репино, «Пенаты»',     f:'Усадьба Репина. Он завёл круглый стол с вертушкой, чтобы гости передавали блюда сами: прислуги за столом он не терпел.'},
+  {km:54, c:'Комарово',             f:'На здешнем кладбище лежат Ахматова, Лихачёв, Гердт. Дачи давали академикам и писателям — посёлок так и остался учёным.'},
+  {km:58, c:'Зеленогорск',          f:'До 1948 года — финский Терийоки, дачная столица начала века. На лето сюда уезжал едва ли не весь литературный Петербург.'},
+  {km:64, c:'Ушково',               f:'Финские названия на перешейке держатся в озёрах и станциях. «Ярви» значит просто «озеро» — их тут больше семисот.'},
+  {km:70, c:'Серово',               f:'Береговые валы идут параллельно морю несколькими грядами: каждая — линия прибоя, отступавшая по мере того, как поднималась суша.'},
+  {km:76, c:'Молодёжное',           f:'Суша здесь продолжает подниматься примерно на три миллиметра в год — земля до сих пор распрямляется после снятой тяжести ледника.'},
+  {km:84, c:'Приветнинское',        f:'Открытый берег, где хорошо видно, как мелка Балтика: отойти можно на сотню метров, а воды всё по колено.'},
+  {km:95, c:'Озеро Красавица',      f:'Одно из самых чистых озёр перешейка. Финское имя Каукъярви значит «дальнее озеро» — дальним оно было от всех дорог.'},
+  {km:105,c:'Рощино',               f:'Сосновые боры стоят на песчаных грядах — это озы и камы, насыпанные талыми водами ледника. Такой рельеф тянется через весь перешеек.'},
+  {km:115,c:'Каннельярви',          f:'Перешеек — водораздел: реки с одной стороны идут в залив, с другой в Ладогу, и разделяет их всего несколько километров.'},
+  {km:135,c:'Приморск',             f:'Бывший Койвисто. Кирха 1904 года из серого гранита — одна из самых крупных, что финны успели построить на этом берегу.'},
+  {km:150,c:'Ермилово',             f:'Дальше начинается самая изрезанная часть побережья: шхеры — затопленные скалы, по которым Балтика заходит в сушу сотнями проток.'},
+  {km:165,c:'Выборгский залив',     f:'Шхерные острова здесь — вершины гранитных холмов. Ледник срезал с них всё мягкое, оставив голый камень, отполированный до блеска.'},
+  {km:175,c:'Выборгский замок',     f:'Единственный в России целиком сохранившийся западноевропейский рыцарский замок. Шведы поставили его в 1293 году на голой скале посреди пролива.'},
+  {km:182,c:'Парк Монрепо',         f:'Скальный пейзажный парк: гранитные лбы, вылизанные ледником, среди сосен. Камни здесь — главные экспонаты, их специально не трогали.'},
+  {km:190,c:'Библиотека Аалто',     f:'Библиотека Алвара Аалто 1935 года. Её волнистый деревянный потолок до сих пор разбирают как образцовое решение акустики.'},
+  {km:205,c:'Гвардейское',          f:'Поворот на восток. Дальше дорога идёт поперёк перешейка — от залива к Ладоге, через самую его середину.'},
+  {km:215,c:'Каменногорск',         f:'Гранитные карьеры. Отсюда шёл камень на ленинградские набережные и станции метро — тот самый рапакиви с крупными округлыми зёрнами.'},
+  {km:230,c:'Светогорск',           f:'Город стоит на самой границе. За рекой Вуоксой начинается финская Иматра, и водопад там пускают по расписанию, как аттракцион.'},
+  {km:245,c:'Мельниково',           f:'Бывший Ряйсяля. Вуокса здесь разливается на протоки и озёра: единой реки нет, есть система, в которой легко заблудиться.'},
+  {km:255,c:'Лосево',               f:'Лосевские пороги рукотворные. В 1857 году прорыли канал, чтобы связать Суходольское озеро с Вуоксой, вода пошла не туда и переписала гидрографию всего перешейка.'},
+  {km:265,c:'Суходольское озеро',   f:'После той же аварии 1857 года озеро упало на несколько метров и обнажило берега. Старая береговая линия видна до сих пор.'},
+  {km:275,c:'Вуокса',               f:'Островов на Вуоксе больше, чем их успели сосчитать: протоки постоянно меняются, и карты расходятся между собой.'},
+  {km:285,c:'Крепость Корела',      f:'Шесть веков переходила из рук в руки. В её башне держали семью Емельяна Пугачёва — жену и детей, много лет после его казни.'},
+  {km:295,c:'Бухта Владимирская',   f:'Отсюда ходят на Коневец. На острове лежит Конь-камень — валун весом под семьсот тонн, которому поклонялись задолго до крещения этих мест.'},
+  {km:310,c:'Берег Ладоги',         f:'Ладога — самое большое озеро Европы. Волна на ней бывает морская, и штормы топили корабли не хуже балтийских.'},
+  {km:325,c:'Громово',              f:'Кругом озёрные котловины, выпаханные ледником. Их вытянутость с северо-запада на юго-восток — это направление, в котором он двигался.'},
+  {km:340,c:'Сосново',              f:'Граница тайги: отсюда на север лес идёт почти без перерыва. Южнее перешейка такого сплошного массива уже нет.'},
+  {km:355,c:'Орехово',              f:'Озёра здесь лежат цепочками в ложбинах между камами. Вода в них тёмная от торфа, но чистая.'},
+  {km:365,c:'Токсово',              f:'Лыжная столица под городом. Здешние горки — тоже камы: ледник насыпал их из песка и гравия, а люди приспособили под трамплины.'},
+  {km:375,c:'Всеволожск',           f:'Отсюда начиналась Дорога жизни. Километровые столбы вдоль неё стоят до сих пор, и счёт на них идёт от Ленинграда.'},
+  {km:385,c:'Ржевка',               f:'Круг замкнулся: перешеек пройден по кругу — вдоль залива на север, поперёк к Ладоге и обратно вдоль неё к городу.'},
+ ]},
+];
+const STOPS=(()=>{const a=[];let off=0;
+  ROUTES.forEach((r,ri)=>{r.stops.forEach(s=>a.push({...s,abs:off+s.km,ri}));off+=r.stops[r.stops.length-1].km});
+  return a})();
+const ROUTE_TOTAL=STOPS[STOPS.length-1].abs;
+
+/* ==================== занятие ====================
+   Расписания нет. Есть одно следующее занятие, которое собирается из
+   прошлого опыта: сколько получилось в прошлый раз и как это далось.
+   Тип чередуется — интервалы, потом непрерывный бег, и снова интервалы. */
+function T_(work,rest,reps,restType){return {work,rest:reps>1?rest:0,reps,restType:restType||'walk'}}
+const WARM=5,COOL=5,WALK_PACE=9;   // разминка, заминка и темп шага, мин/км
+const REST_NAME={walk:'шагом',jog:'трусцой'};
+const L0=8;                        // минут бега в первом занятии
+
+/* Как далось занятие — единственный вопрос, который приложение задаёт. */
+const RPE=[
+  {v:1,t:'Легко',        d:'Мог бы ещё столько же',            k:1.14},
+  {v:2,t:'Нормально',    d:'Устал, но бежал ровно',            k:1.07},
+  {v:3,t:'Тяжело',       d:'Последние отрезки дались с трудом',k:1.00},
+  {v:4,t:'Очень тяжело', d:'Пришлось сбавить или перейти на шаг',k:0.88},
+];
+const RPEK=v=>(RPE.find(x=>x.v===v)||{k:1.03}).k;
+
+function runMin(t){return Math.round(t.work*t.reps*10)/10}
+function restMin(t){return Math.round(t.rest*(t.reps-1)*10)/10}
+function allMin(t){return Math.round((WARM+COOL+runMin(t)+restMin(t))*10)/10}
+function estKm(t,pace){
+  const rest=t.restType==='jog'?restMin(t)/(pace*1.1):restMin(t)/WALK_PACE;
+  return Math.round((runMin(t)/(t.restType==='jog'?pace*.9:pace)+rest+(WARM+COOL)/WALK_PACE)*10)/10;
+}
+function clock(m){const w=Math.floor(m),s=Math.round((m-w)*60);return `${w}:${String(s).padStart(2,'0')}`}
+function mins(m){return km(m)+' мин'}
+function sortedRuns(){return S.runs.slice().sort((a,b)=>a.date<b.date?-1:1)}
+
+/* Уровень — сколько минут бега приложение считает посильными сейчас.
+   Он не хранится, а пересчитывается из всей истории: ответы про самочувствие
+   двигают его вверх или вниз, длинный перерыв откатывает назад. */
+function levelNow(){
+  const R=sortedRuns();
+  let L=L0;
+  for(const r of R){
+    // шаг не больше 14% за занятие — это и есть защита от резкого скачка
+    if(r.rpe)L*=RPEK(r.rpe);
+    else if(r.min)L=Math.max(L,Math.min(L*1.1,r.min*0.6)); // старые данные без ответа тянут мягко
+    L=Math.max(6,Math.min(90,L));
+  }
+  const last=R[R.length-1];
+  if(last){
+    const gap=daysBetween(fromISO(last.date),today());
+    if(gap>28)L*=0.7; else if(gap>14)L*=0.85;
+  }
+  return Math.max(6,Math.min(90,Math.round(L*2)/2));
+}
+function nextKind(){
+  const R=sortedRuns().filter(r=>r.kind);
+  const last=R[R.length-1];
+  return last&&last.kind==='int'?'cont':'int';
+}
+/* Чем выше уровень, тем длиннее рабочий отрезок и короче отдых. */
+const INT_TABLE=[[10,1,1.5],[13,1.5,1.5],[16,2,1.5],[20,3,1.5],[25,4,1.5],[32,5,2],[45,6,2],[999,8,2]];
+function buildSession(L,kind,pace){
+  if(kind==='cont'){
+    const work=Math.max(5,Math.round(L*0.75));
+    return makeSession(T_(work,0,1),pace,'cont',{
+      title:'Непрерывный бег',
+      goal:`Пробежать ${mins(work)} и ни разу не перейти на шаг. Скорость не важна.`});
+  }
+  const row=INT_TABLE.find(r=>L<r[0]);
+  const work=row[1],rest=row[2];
+  const reps=Math.max(3,Math.round(L/work));
+  return makeSession(T_(work,rest,reps),pace,'int',{
+    title:'Интервалы',
+    goal:`Отбежать все ${reps} ${plural(reps,'отрезок','отрезка','отрезков')} целиком. Последний не медленнее первого.`});
+}
+function makeSession(t,pace,kind,extra){
+  return Object.assign({t,kind,type:kind==='int'?'intervals':'long',
+    work:t.work,rest:t.rest,reps:t.reps,
+    runMin:runMin(t),allMin:allMin(t),dist:estKm(t,pace),
+    plan:t.reps>1?`${t.reps} × ${mins(t.work)} бегом через ${mins(t.rest)} ${REST_NAME[t.restType]}`
+                 :`${mins(t.work)} бегом без перерыва`,
+    watch:watchRows(t)},extra||{});
+}
+/* Строки ровно под поля интервального таймера на часах */
+function watchRows(t){
+  const rows=[['Разминка',`${WARM} мин шагом`],['Работа',clock(t.work)]];
+  if(t.reps>1)rows.push(['Отдых',`${clock(t.rest)} ${REST_NAME[t.restType]}`]);
+  rows.push(['Повторов',String(t.reps)]);
+  rows.push(['Заминка',`${COOL} мин шагом`]);
+  return rows;
+}
+
+/* Всё состояние приложения в одном месте. */
+function plan(){
+  const paceRaw=easyPace(),pace=paceRaw||8.5;
+  const L=levelNow(),kind=nextKind();
+  const R=sortedRuns();
+  const last=R[R.length-1];
+  return {L,kind,pace,paceKnown:!!paceRaw,
+    next:buildSession(L,kind,pace),
+    other:buildSession(L,kind==='int'?'cont':'int',pace),
+    done:R.length,last,
+    gap:last?daysBetween(fromISO(last.date),today()):null,
+    pending:R.filter(r=>!r.rpe&&r.kind).slice(-1)[0]||null,
+    cadence:cadenceDays(),kmPer:kmPerSession(pace,L)};
+}
+/* Как часто он бегает на самом деле — медиана промежутков между пробежками. */
+function cadenceDays(){
+  const R=sortedRuns();
+  if(R.length<3)return 3.5;
+  const g=[];
+  for(let i=1;i<R.length;i++){
+    const d=daysBetween(fromISO(R[i-1].date),fromISO(R[i].date));
+    if(d>0&&d<30)g.push(d);
+  }
+  if(!g.length)return 3.5;
+  g.sort((a,b)=>a-b);
+  return Math.max(1.5,Math.min(10,g[Math.floor(g.length/2)]));
+}
+function kmPerSession(pace,L){
+  const R=sortedRuns().filter(r=>r.dist>0).slice(-6);
+  if(R.length>=3){const d=R.map(r=>r.dist).sort((a,b)=>a-b);return d[Math.floor(d.length/2)]}
+  return Math.max(1.5,Math.round((L/pace+(WARM+COOL)/WALK_PACE)*10)/10);
+}
+function easyPace(){
+  const R=S.runs.filter(r=>r.min>0&&r.dist>=1).slice(-10);
+  if(R.length<3)return 0;
+  const p=R.map(r=>r.min/r.dist).sort((a,b)=>a-b);
+  return Math.max(4,Math.min(14,p[Math.floor(p.length/2)]));
+}
+
+/* ==================== статистика ==================== */
+function stats(P){
+  const R=sortedRuns();
+  const total=R.reduce((s,r)=>s+r.dist,0);
+  const longest=R.reduce((m,r)=>Math.max(m,r.dist),0);
+  const longestMin=R.reduce((m,r)=>Math.max(m,r.min||0),0);
+  const byMonth={},byWeek={};
+  for(const r of R){
+    byMonth[r.date.slice(0,7)]=(byMonth[r.date.slice(0,7)]||0)+r.dist;
+    const k=iso(monday(fromISO(r.date)));byWeek[k]=(byWeek[k]||0)+r.dist;
+  }
+  const weekMax=Math.max(0,...Object.values(byWeek));
+  const monthMax=Math.max(0,...Object.values(byMonth));
+  // серия: сколько занятий подряд без перерыва длиннее двух недель
+  let streak=0,best=0;
+  for(let i=0;i<R.length;i++){
+    const gap=i?daysBetween(fromISO(R[i-1].date),fromISO(R[i].date)):0;
+    streak=(i&&gap>14)?1:streak+1;
+    best=Math.max(best,streak);
+  }
+  const paced=R.filter(r=>r.min>0&&r.dist>=1);
+  const avg=a=>a.length?a.reduce((s,r)=>s+r.min,0)/a.reduce((s,r)=>s+r.dist,0):0;
+  const p0=avg(paced.slice(0,5)),p1=avg(paced.slice(-5));
+  const gain=(paced.length>=8&&p0&&p1)?(p0-p1)*60:0;
+  return {R,total,longest,longestMin,count:R.length,byMonth,byWeek,weekMax,monthMax,streak,best,gain,
+    early:R.some(r=>r.h!=null&&r.h<7),night:R.some(r=>r.h!=null&&r.h>=21),
+    level:P.L,curPace:p1?pace(p1,1):null};
+}
+
+/* ==================== индекс бегуна ====================
+   Из файла приходят только дистанция и время, поэтому берём то, что из них
+   действительно выводится: оценку VO2max по формулам Дэниелса и Гилберта (1979).
+   Первая считает кислородную стоимость скорости, вторая — какую долю максимума
+   человек способен держать столько минут; отношение и есть VDOT.
+   Считаем только по непрерывному бегу: в интервальном занятии средний темп
+   размазан ходьбой и сравнивать его не с чем. */
+function vdotOf(distKm,minutes){
+  if(!(distKm>=1)||!(minutes>=5))return 0;
+  const v=distKm*1000/minutes;                       // метров в минуту
+  const vo2=-4.60+0.182258*v+0.000104*v*v;
+  const pct=0.8+0.1894393*Math.exp(-0.012778*minutes)+0.2989558*Math.exp(-0.1932605*minutes);
+  return vo2/pct;
+}
+function median(a){if(!a.length)return 0;const b=a.slice().sort((x,y)=>x-y);return b[Math.floor(b.length/2)]}
+const WIN=42;                                        // окно наблюдения, дней
+function indexWindow(from,to){
+  const R=S.runs.filter(r=>{const d=fromISO(r.date);return d>addDays(today(),-to)&&d<=addDays(today(),-from)});
+  const cont=R.filter(r=>r.kind!=='int'&&r.min>=5&&r.dist>=1);
+  const easy=R.filter(r=>r.min>0&&r.dist>=1&&(!r.rpe||r.rpe<=2));
+  // если часы отдают пульс — считаем экономичность: сколько метров в минуту на удар
+  const withHr=R.filter(r=>r.hr>40&&r.min>0&&r.dist>=1);
+  return {
+    n:R.length,
+    vdot:cont.length?Math.max(...cont.map(r=>vdotOf(r.dist,r.min))):0,
+    endur:cont.length?Math.max(...cont.map(r=>r.min)):0,
+    pace:easy.length?median(easy.map(r=>r.min/r.dist)):0,
+    hr:withHr.length?median(withHr.map(r=>r.hr)):0,
+    ei:withHr.length?median(withHr.map(r=>r.dist*1000/r.min/r.hr)):0,
+  };
+}
+/* Направление: лучше, так же или хуже. Порог нужен, чтобы шум не выдавался за рост. */
+function dir(cur,prev,higherBetter,tol){
+  if(!cur||!prev)return null;
+  const d=(cur-prev)/prev;
+  if(Math.abs(d)<tol)return {s:'same',t:'без изменений',v:0};
+  const better=higherBetter?d>0:d<0;
+  return {s:better?'up':'down',t:better?'лучше':'хуже',v:Math.abs(d)};
+}
+function runnerIndex(){
+  const cur=indexWindow(0,WIN),prev=indexWindow(WIN,WIN*2);
+  return {cur,prev,
+    vdotDir:dir(cur.vdot,prev.vdot,true,.02),
+    endurDir:dir(cur.endur,prev.endur,true,.05),
+    paceDir:dir(cur.pace,prev.pace,false,.02),
+    eiDir:dir(cur.ei,prev.ei,true,.02),
+    score:cur.vdot?Math.round(cur.vdot):0};
+}
+/* Словами: что вообще значит это число */
+function vdotWord(v){
+  if(v<30)return 'начальный уровень';
+  if(v<38)return 'уверенный любитель';
+  if(v<46)return 'хорошая форма';
+  if(v<54)return 'сильный любитель';
+  return 'высокий уровень';
+}
+
+/* ==================== награды ==================== */
+const AWARDS=[
+  {id:'first',ic:'👟',t:'Первый шаг',d:'Первая пробежка',g:s=>[s.count,1]},
+  {id:'r10',ic:'🔟',t:'Десять стартов',d:'10 пробежек',g:s=>[s.count,10]},
+  {id:'r50',ic:'📅',t:'Полсотни',d:'50 пробежек',g:s=>[s.count,50]},
+  {id:'d5',ic:'🥉',t:'Пятёрка',d:'5 км за раз',g:s=>[s.longest,5]},
+  {id:'d10',ic:'🥈',t:'Десятка',d:'10 км за раз',g:s=>[s.longest,10]},
+  {id:'d15',ic:'🥇',t:'Пятнашка',d:'15 км за раз',g:s=>[s.longest,15]},
+  {id:'d21',ic:'🏆',t:'Полумарафон',d:'21,1 км за раз',g:s=>[s.longest,21.1]},
+  {id:'t50',ic:'🌱',t:'50 км',d:'Всего набегано',g:s=>[s.total,50]},
+  {id:'t100',ic:'🌿',t:'100 км',d:'Всего набегано',g:s=>[s.total,100]},
+  {id:'t250',ic:'🌳',t:'250 км',d:'Всего набегано',g:s=>[s.total,250]},
+  {id:'t500',ic:'⛰',t:'500 км',d:'Всего набегано',g:s=>[s.total,500]},
+  {id:'t1000',ic:'🌍',t:'1000 км',d:'Всего набегано',g:s=>[s.total,1000]},
+  {id:'w30',ic:'📦',t:'30 за неделю',d:'Недельный объём',g:s=>[s.weekMax,30]},
+  {id:'w50',ic:'🚚',t:'50 за неделю',d:'Недельный объём',g:s=>[s.weekMax,50]},
+  {id:'m100',ic:'🗓',t:'100 за месяц',d:'Календарный месяц',g:s=>[s.monthMax,100]},
+  {id:'s4',ic:'🔥',t:'Без пауз',d:'8 занятий без длинного перерыва',g:s=>[s.best,8]},
+  {id:'s12',ic:'💎',t:'Втянулся',d:'25 занятий без длинного перерыва',g:s=>[s.best,25]},
+  {id:'early',ic:'🌅',t:'Ранняя пташка',d:'Побежал до 7 утра',g:s=>[s.early?1:0,1]},
+  {id:'night',ic:'🌙',t:'Ночной',d:'Побежал после 21:00',g:s=>[s.night?1:0,1]},
+  {id:'pace',ic:'⚡️',t:'Быстрее',d:'Темп вырос на 20 с/км',g:s=>[Math.max(0,s.gain),20]},
+  {id:'m20',ic:'🧭',t:'Двадцатка',d:'20 минут бега за раз',g:s=>[s.longestMin,20]},
+  {id:'m45',ic:'👑',t:'Сорок пять',d:'45 минут бега за раз',g:s=>[s.longestMin,45]},
+];
+function awardState(s){return AWARDS.map(a=>{const[c,t]=a.g(s);return{...a,cur:c,tgt:t,got:c>=t}})}
+
+/* ==================== рендер ==================== */
+const app=document.getElementById('app');
+function render(){
+  const P=plan(),st=stats(P);
+  document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
+  const v={today:vToday,plan:vSessions,stats:vStats,route:vRoute,more:vMore}[S.tab]||vToday;
+  app.innerHTML=v(P,st);
+  app.scrollTop=0;
+  checkNew(st);
+}
+
+/* ---------- ЗАНЯТИЕ ---------- */
+function heroSession(x,P,alt){
+  const band=P.paceKnown
+    ? `${pace(P.pace*0.94,1)}–${pace(P.pace*1.12,1)} /км — твой обычный лёгкий темп по загруженным пробежкам.`
+    : 'медленнее, чем кажется правильным.';
+  return `<div class="hero"><div class="glow"></div>
+    <span class="type ${x.kind==='int'?'blue':''}">${x.title}</span>
+    <div class="big">${km(x.runMin)} <span>мин бега</span></div>
+    <div class="det">${x.plan}</div>
+    <div class="watch">
+      <div class="lbl" style="margin-bottom:7px">На часы</div>
+      ${x.watch.map(([k,v])=>`<div class="wl"><span>${k}</span><b>${v}</b></div>`).join('')}
+      <div class="hint" style="margin-top:9px;font-size:12px">Разминку и заминку отсчитываешь сам, в интервальный таймер идут только работа, отдых и повторы.</div>
+    </div>
+    <div class="why"><b style="font-weight:600;color:var(--tx)">Темп:</b> ${band} Проверка простая — на бегу можешь сказать фразу из пяти слов и не задохнуться. Не можешь — сбавь, это не ошибка.</div>
+    <div class="why"><b style="font-weight:600;color:var(--tx)">Цель:</b> ${x.goal}</div>
+    <div class="why">Около ${km(x.allMin)} мин на ногах вместе с разминкой, примерно ${km(x.dist)} км.
+      ${alt?`<br>В прошлый раз были ${P.last&&P.last.kind==='int'?'интервалы':'непрерывный бег'} — сегодня чередуем.`:''}</div>
+  </div>`;
+}
+function vToday(P,st){
+  const doneToday=S.runs.find(r=>r.date===iso(today()));
+  const x=P.next;
+  let head;
+  if(doneToday){
+    head=`<div class="hero"><div class="glow"></div>
+      <span class="type">Сделано сегодня</span>
+      <div class="big">${km(doneToday.min||0)} <span>мин</span></div>
+      <div class="det">${km(doneToday.dist)} км${doneToday.min?', '+pace(doneToday.min,doneToday.dist)+' /км':''}${doneToday.rpe?' · '+RPE.find(r=>r.v===doneToday.rpe).t.toLowerCase():''}</div>
+      <div class="why">Следующее занятие — ${x.title.toLowerCase()}, ${mins(x.runMin)} бега. Отдохни день-другой.</div></div>`;
+  } else head=heroSession(x,P,!!P.last);
+
+  return `
+  <div class="top"><div><h1>${greet()}</h1><div class="sub">${DOW[dow(today())]}, ${fmtDate(today())}${P.gap!=null?' · '+(P.gap===0?'бежал сегодня':P.gap===1?'вчера бежал':`${P.gap} ${plural(P.gap,'день','дня','дней')} без бега`):''}</div></div>
+    <span class="tag">занятие ${P.done+1}</span></div>
+  ${P.pending?pendingCard(P):''}
+  ${(!syncOn()&&st.count>0)?`<button class="card" style="display:block;width:100%;text-align:left;border-color:#3A3322;background:linear-gradient(150deg,rgba(255,176,32,.08),var(--card))" onclick="syncSheet()">
+    <div class="lbl" style="color:var(--warn)">Данные только здесь</div>
+    <div class="hint" style="margin-top:6px">У приложения с рабочего стола своё хранилище, отдельное от Safari — загруженное в браузере сюда не попадёт. Подключи облако, и данные будут везде одни.</div>
+  </button>`:''}
+  ${head}
+  <button class="btn" onclick="pickRuns()">Загрузить пробежку из файла</button>
+  <div class="hint" style="text-align:center;margin:8px 0 14px">Любой файл из приложения часов — tcx, gpx, csv, json или zip.</div>
+  ${routeStrip(st,P)}
+  <div class="grid">
+    <div class="st"><div class="v">${km(P.L)}</div><div class="k">мин — твой уровень</div></div>
+    <div class="st"><div class="v">${st.count}</div><div class="k">занятий сделано</div></div>
+    <div class="st"><div class="v">${runnerIndex().score||'—'}</div><div class="k">индекс бегуна</div></div>
+  </div>`;
+}
+function greet(){const h=new Date().getHours();return h<5?'Ночь':h<11?'Утро':h<17?'День':h<23?'Вечер':'Ночь'}
+/* Не ответил, как далось прошлое занятие — спрашиваем ещё раз, от этого зависит следующее */
+function pendingCard(P){
+  const r=P.pending;
+  return `<button class="card" style="display:block;width:100%;text-align:left;border-color:var(--acc-dim);background:linear-gradient(150deg,rgba(216,255,74,.09),var(--card))"
+    onclick="askRpe('${r.id}')">
+    <div class="lbl">Один вопрос</div>
+    <div style="margin-top:6px"><b>Как далась пробежка ${fmtDate(fromISO(r.date))}?</b>
+      <div class="hint">${km(r.dist)} км за ${km(r.min||0)} мин. От ответа зависит следующее занятие.</div></div>
+  </button>`;
+}
+
+/* ---------- ЗАНЯТИЯ ---------- */
+function vSessions(P,st){
+  const R=st.R.slice().reverse();
+  return `<div class="top"><div><h1>Занятия</h1><div class="sub">Расписания нет — следующее собирается из прошлого</div></div></div>
+  <div class="card">
+    <div class="lbl">Следующее</div>
+    <div style="display:flex;gap:12px;align-items:baseline;margin-top:8px">
+      <div style="font-size:30px;font-weight:700;letter-spacing:-.03em">${km(P.next.runMin)}<span style="font-size:15px;color:var(--mut);font-weight:600"> мин</span></div>
+      <div style="flex:1"><b>${P.next.title}</b><div class="hint">${P.next.plan}</div></div>
+    </div>
+    <div class="hint" style="margin-top:12px">А следом за ним — ${P.other.title.toLowerCase()}, ${mins(P.other.runMin)} бега. Типы чередуются: интервалы учат держать темп, непрерывный бег — держаться дольше.</div>
+  </div>
+  <div class="card">
+    <div class="lbl">Как считается</div>
+    <div class="hint" style="margin-top:8px;line-height:1.65">
+      Сейчас твой уровень — <b style="color:var(--tx)">${km(P.L)} мин бега</b> за занятие. Двигают его только твои ответы после пробежки:
+      «легко» прибавляет 14%, «нормально» — 7%, «тяжело» оставляет как есть, «очень тяжело» снимает 12%.
+      Больше 14% за раз уровень вырасти не может, и это не осторожность ради осторожности: резкий скачок одной пробежки предсказывает травмы лучше, чем недельный объём.
+      Перерыв больше двух недель откатывает уровень на 15%, больше месяца — на 30%, чтобы возвращение было мягким.
+    </div>
+  </div>
+  <div class="card">
+    <div class="lbl">История · ${st.count}</div>
+    ${R.length?R.map(r=>{
+      const d=fromISO(r.date);
+      const a=r.rpe?RPE.find(x=>x.v===r.rpe):null;
+      return `<div class="rn">
+        <div class="dt"><b>${d.getDate()}</b><small>${MON[d.getMonth()]}</small></div>
+        <div class="m"><b>${km(r.min||0)} мин</b> <span style="color:var(--mut);font-size:13px">${km(r.dist)} км${r.min?' · '+pace(r.min,r.dist)+' /км':''}</span>
+          <small>${r.kind?(r.kind==='int'?'интервалы':'непрерывный бег'):'загружено из файла'}${a?' · '+a.t.toLowerCase():''}${r.hr?' · пульс '+r.hr:''}${r.up?' · +'+r.up+' м':''}</small></div>
+        <button class="x" onclick="askRpe('${r.id}')">${r.rpe?'⋯':'?'}</button>
+      </div>`}).join('')
+      :'<div class="empty">Ещё ничего нет. Загрузи файл после первой пробежки.</div>'}
+  </div><div style="height:20px"></div>`;
+}
+
+/* ---------- ПРОГРЕСС ---------- */
+function vStats(P,st){
+  return `<div class="top"><div><h1>Прогресс</h1><div class="sub">${st.count} ${plural(st.count,'занятие','занятия','занятий')} · ${km(st.total)} км</div></div></div>
+  <div class="grid">
+    <div class="st"><div class="v">${km(st.longestMin)}</div><div class="k">макс. мин за раз</div></div>
+    <div class="st"><div class="v">${km(st.longest)}</div><div class="k">макс. км за раз</div></div>
+    <div class="st"><div class="v">${st.gain>0?'−'+Math.round(st.gain)+'с':'—'}</div><div class="k">темп /км</div></div>
+  </div>
+  ${indexCard()}
+  <div class="card"><div class="lbl">Минуты бега по занятиям</div>${runBars(st.R)}
+    <div class="legend"><span><i style="background:var(--acc)"></i>интервалы</span><span><i style="background:var(--blue)"></i>непрерывный</span><span><i style="background:var(--line)"></i>без пометки</span></div>
+  </div>
+  <div class="card"><div class="lbl">Темп</div>${paceChart(st.R)}</div>
+  <div style="height:20px"></div>`;
+}
+function indexCard(){
+  const I=runnerIndex();
+  const arrow=d=>d?(d.s==='up'?'<span style="color:var(--acc)">↑</span>':d.s==='down'?'<span style="color:var(--bad)">↓</span>':'<span style="color:var(--mut)">→</span>'):'';
+  const word=d=>d?`${arrow(d)} <span style="color:${d.s==='up'?'var(--acc)':d.s==='down'?'var(--bad)':'var(--mut)'}">${d.t}${d.v?', '+Math.round(d.v*100)+'%':''}</span>`:'<span style="color:var(--mut)">первое измерение</span>';
+  if(!I.score)return `<div class="card">
+    <div class="lbl">Индекс бегуна</div>
+    <div class="hint" style="margin-top:8px">Появится после первого занятия с непрерывным бегом: в интервальном средний темп размазан ходьбой, и считать по нему нечего.</div></div>`;
+  return `<div class="card">
+    <div class="lbl">Индекс бегуна</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:8px">
+      <div style="font-size:44px;font-weight:700;letter-spacing:-.04em;line-height:1">${I.score}</div>
+      <div style="flex:1">
+        <div style="font-weight:600">${vdotWord(I.cur.vdot)}</div>
+        <div style="font-size:13px">${word(I.vdotDir)}</div>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="wl"><span>Выносливость · ${km(Math.round(I.cur.endur))} мин подряд</span><b style="font-weight:500;font-size:13px">${word(I.endurDir)}</b></div>
+      <div class="wl"><span>Лёгкий темп · ${I.cur.pace?pace(I.cur.pace,1)+' /км':'—'}</span><b style="font-weight:500;font-size:13px">${word(I.paceDir)}</b></div>
+      ${I.cur.ei?`<div class="wl"><span>Экономичность · ${km(Math.round(I.cur.ei*100)/100)} м на удар, пульс ${Math.round(I.cur.hr)}</span><b style="font-weight:500;font-size:13px">${word(I.eiDir)}</b></div>`:''}
+    </div>
+    ${I.cur.ei?'':`<div class="hint" style="margin-top:12px;opacity:.8">Пульса в твоих файлах нет. Если часы научатся его отдавать, здесь появится экономичность — сколько метров ты пробегаешь на один удар сердца. Это самый честный показатель формы: при одинаковом темпе пульс падает раньше, чем растёт скорость.</div>`}
+    <div class="hint" style="margin-top:12px">Это оценка МПК по формулам Дэниелса и Гилберта: сколько кислорода тело способно переработать на килограмм веса в минуту. Считается по самому быстрому непрерывному бегу за 6 недель и сравнивается с предыдущими шестью. Число занижено, если ты не бежал ни разу в полную силу, — важна не величина, а куда она идёт.</div>
+  </div>`;
+}
+function runBars(R){
+  const D=R.slice(-20);
+  if(!D.length)return '<div class="empty">Нет данных</div>';
+  const W=520,H=170,l=6,r=30,n=D.length;
+  const max=Math.max(10,...D.map(x=>x.min||0))*1.12;
+  const bw=(W-l-r)/n;
+  const y=v=>H-22-(v/max)*(H-40);
+  return `<svg viewBox="0 0 ${W} ${H}" style="margin-top:10px">
+    ${[0,.5,1].map(f=>`<line x1="${l}" x2="${W-r+2}" y1="${y(max*f)}" y2="${y(max*f)}" stroke="var(--line)"/>`).join('')}
+    ${D.map((x,i)=>{
+      const bx=l+i*bw,iw=Math.max(4,bw*.58),ox=bx+(bw-iw)/2,v=x.min||0;
+      const col=x.kind==='int'?'var(--acc)':(x.kind==='cont'?'var(--blue)':'var(--line)');
+      return `<rect x="${ox}" y="${y(v)}" width="${iw}" height="${Math.max(2,H-22-y(v))}" rx="3" fill="${col}"/>`;
+    }).join('')}
+    ${[.5,1].map(f=>`<text x="${W-r+7}" y="${y(max*f)+3}" fill="var(--mut)" font-size="10">${Math.round(max*f)}</text>`).join('')}
+    <text x="${l}" y="${H-6}" fill="var(--mut)" font-size="10">${fmtDate(fromISO(D[0].date))}</text>
+    <text x="${W-r+2}" y="${H-6}" fill="var(--mut)" font-size="10" text-anchor="end">${fmtDate(fromISO(D[D.length-1].date))}</text>
+  </svg>`;
+}
+function paceChart(R){
+  const P=R.filter(r=>r.min>0&&r.dist>=2).map(r=>({d:fromISO(r.date),p:r.min/r.dist,dist:r.dist}));
+  if(P.length<3)return '<div class="empty">Нужно 3+ пробежки со временем</div>';
+  const W=520,H=170,pad=44;
+  const t0=+P[0].d,t1=Math.max(+P[P.length-1].d,t0+86400000);
+  const ps=P.map(p=>p.p),lo=Math.min(...ps)-.3,hi=Math.max(...ps)+.3;
+  const X=p=>pad+((+p.d-t0)/(t1-t0))*(W-pad*2);
+  const Y=p=>18+((p.p-lo)/(hi-lo))*(H-46);
+  // сглаженная линия по 3 точкам
+  const sm=P.map((p,i)=>{const a=P.slice(Math.max(0,i-2),i+1);return{d:p.d,p:a.reduce((s,x)=>s+x.p,0)/a.length}});
+  return `<svg viewBox="0 0 ${W} ${H}" style="margin-top:10px">
+    ${[lo,(lo+hi)/2,hi].map(v=>`<line x1="${pad}" x2="${W-pad}" y1="${Y({p:v,d:P[0].d})}" y2="${Y({p:v,d:P[0].d})}" stroke="var(--line)"/>`).join('')}
+    <polyline fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"
+      points="${sm.map(p=>X(p)+','+Y(p)).join(' ')}"/>
+    ${P.map(p=>`<circle cx="${X(p)}" cy="${Y(p)}" r="${Math.min(6,2.4+p.dist/6)}" fill="var(--bg)" stroke="var(--acc)" stroke-width="1.8"/>`).join('')}
+    ${[lo,(lo+hi)/2,hi].map(v=>`<text x="${pad-4}" y="${Y({p:v,d:P[0].d})+3}" fill="var(--mut)" font-size="10" text-anchor="end">${pace(v,1)}</text>`).join('')}
+    <text x="${pad}" y="${H-4}" fill="var(--mut)" font-size="10">${fmtDate(P[0].d)}</text>
+    <text x="${W-pad}" y="${H-4}" fill="var(--mut)" font-size="10" text-anchor="end">${fmtDate(P[P.length-1].d)}</text>
+  </svg>
+  <div class="hint" style="margin-top:8px">Ниже — быстрее. Размер точки — длина пробежки.</div>`;
+}
+
+/* ---------- ПУТЬ ---------- */
+function routeInfo(total){
+  const passed=STOPS.filter(s=>total>=s.abs);
+  const next=STOPS.find(s=>total<s.abs);
+  const last=passed[passed.length-1];
+  const from=last?last.abs:0;
+  const p=next?(total-from)/(next.abs-from):1;
+  return {passed,next,last,p:Math.max(0,Math.min(1,p))};
+}
+/* Через сколько занятий и дней будет следующая точка.
+   Пока не набралось хотя бы трёх пробежек за неделю, считать не из чего:
+   ни средней длины пробежки, ни того, как часто он вообще бегает. */
+function routeEta(st,P){
+  const R=routeInfo(st.total);
+  if(!R.next)return null;
+  const left=Math.max(0,R.next.abs-st.total);
+  const runs=sortedRuns();
+  const span=runs.length>1?daysBetween(fromISO(runs[0].date),fromISO(runs[runs.length-1].date)):0;
+  if(runs.length<3||span<7)return {left,ready:false,have:runs.length,span};
+  const per=Math.max(.8,P.kmPer);
+  const ses=Math.max(1,Math.ceil(left/per));
+  const days=Math.max(1,Math.round(ses*P.cadence));
+  return {left,ready:true,ses,days,per,cadence:P.cadence,runs:runs.length,
+    rough:runs.length<8,when:addDays(today(),days)};
+}
+function etaText(e){
+  if(!e)return '';
+  if(!e.ready)return e.have<3
+    ? `Срок появится, когда наберётся ${3-e.have} ${plural(3-e.have,'пробежка','пробежки','пробежек')}: пока не из чего считать, как часто ты бегаешь.`
+    : 'Срок появится, когда пройдёт первая полная неделя — тогда станет видно, с какой частотой ты бегаешь.';
+  return `${e.ses} ${plural(e.ses,'пробежка','пробежки','пробежек')} по ${km(e.per)} км — это около ${e.days} ${plural(e.days,'дня','дней','дней')}, к ${fmtDate(e.when)}`;
+}
+function etaBasis(e){
+  if(!e||!e.ready)return '';
+  return `Считаю по твоим ${km(e.per)} км за пробежку и ${km(e.cadence)} ${plural(Math.round(e.cadence),'дню','дням','дням')} между ними.`
+    +(e.rough?' Прогноз пока грубый — с каждой неделей будет точнее.':'');
+}
+function routeStrip(st,P){
+  const R=routeInfo(st.total);
+  const eta=P?routeEta(st,P):null;
+  if(!R.next)return `<div class="card"><div class="lbl">Путь</div>
+    <div style="margin-top:8px"><b>Весь маршрут пройден</b><div class="hint">${km(st.total)} км — весь Карельский перешеек по кругу.</div></div></div>`;
+  return `<button class="card" style="display:block;width:100%;text-align:left" onclick="S.tab='route';save();render()">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <div class="lbl">Путь · ${ROUTES[R.next.ri].name}</div>
+      <div style="font-size:13px;color:var(--mut)">${km(st.total)} км</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:650">${R.next.c} — через ${km(R.next.abs-st.total)} км</div>
+        <div class="bar" style="height:6px;margin-top:8px"><i style="width:${R.p*100}%;background:var(--acc)"></i></div>
+      </div>
+      <div style="font-size:22px">📍</div>
+    </div>
+    ${eta?`<div class="hint" style="margin-top:9px">${etaText(eta)}${eta.ready?'.':''}</div>`:R.last?`<div class="hint" style="margin-top:9px">Последняя отметка: ${R.last.c}, ${km(R.last.abs)} км</div>`:
+      `<div class="hint" style="margin-top:9px">Старт — северная окраина города. Впереди ${ROUTE_TOTAL} км по Карельскому перешейку.</div>`}
+  </button>`;
+}
+function vRoute(P,st){
+  const R=routeInfo(st.total);
+  const eta=routeEta(st,P);
+  const A=awardState(st),got=A.filter(a=>a.got).length;
+  const r=ROUTES[0];
+  const locked=STOPS.length-R.passed.length-(R.next?1:0);
+  return `<div class="top"><div><h1>Путь</h1><div class="sub">${km(st.total)} из ${ROUTE_TOTAL} км · ${R.passed.length} ${plural(R.passed.length,'место','места','мест')} позади</div></div></div>
+  <div class="card">
+    <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:18px">${r.ic}</span>
+      <div style="flex:1"><b>${r.name}</b><div class="hint">${r.sub}</div></div></div>
+    <div class="bar" style="height:6px;margin-top:12px"><i style="width:${Math.min(100,st.total/ROUTE_TOTAL*100)}%;background:var(--acc)"></i></div>
+    <div class="hint" style="margin-top:8px">Дорога открывается по мере бега: что впереди — видно только на шаг вперёд.</div>
+  </div>
+  <div class="card">
+    <div style="margin-top:2px">
+    ${R.passed.length?R.passed.map((s,i)=>stopRow(s,true,false,i<R.passed.length-1||!!R.next)).join(''):
+      `<div class="hint" style="padding:6px 0 10px">Пока ни одного места. Первое — ${STOPS[0].c}, через ${km(STOPS[0].abs)} км.</div>`}
+    ${R.next?stopRow(R.next,false,true,locked>0,st.total,eta):''}
+    ${locked>0?`<div style="display:flex;gap:12px">
+      <div style="width:12px;flex:none;display:flex;justify-content:center">
+        <div style="width:11px;height:11px;border-radius:50%;margin-top:4px;background:var(--line)"></div></div>
+      <div style="flex:1;color:var(--mut);font-size:13px;padding-top:1px">
+        Дальше ещё ${locked} ${plural(locked,'место','места','мест')} и ${km(ROUTE_TOTAL-(R.next?R.next.abs:0))} км. Что там — узнаешь, когда добежишь.</div>
+    </div>`:''}
+    </div>
+  </div>
+  <div class="card flat" style="margin:22px 0 10px"><div class="lbl">Медали · ${got} из ${A.length}</div></div>
+  ${nextAwardCard(A)}
+  ${vAwardGrid(A)}<div style="height:20px"></div>`;
+}
+/* строка места: пройденное с фактом, ближайшее — только именем */
+function stopRow(s,done,isNext,line,total,eta){
+  return `<div style="display:flex;gap:12px">
+    <div style="width:12px;flex:none;display:flex;flex-direction:column;align-items:center">
+      <div style="width:11px;height:11px;border-radius:50%;margin-top:4px;flex:none;
+        background:${done?'var(--acc)':'transparent'};border:${isNext?'2px solid var(--acc)':'none'}"></div>
+      ${line?`<div style="flex:1;width:2px;background:${done?'var(--acc-dim)':'var(--line)'};margin:3px 0"></div>`:''}
+    </div>
+    <div style="flex:1;min-width:0;padding-bottom:${line?'16px':'2px'}">
+      <div style="display:flex;justify-content:space-between;gap:8px">
+        <b style="font-weight:${done?'650':'600'}">${s.c}</b>
+        <span style="font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;flex:none">${km(s.abs)} км</span>
+      </div>
+      ${done?`<div class="hint" style="margin-top:5px">${s.f}</div>`
+            :`<div class="hint" style="margin-top:5px;color:var(--acc)">Ещё ${km(s.abs-total)} км — и место откроется.</div>
+               ${eta?`<div class="hint" style="margin-top:3px">${etaText(eta)}${eta.ready?'.':''}</div>
+                 ${eta&&eta.ready?`<div class="hint" style="margin-top:3px;opacity:.75">${etaBasis(eta)}</div>`:''}`:''}`}
+    </div></div>`;
+}
+
+/* ---------- НАГРАДЫ ---------- */
+function vAwardGrid(A){
+  return `<div class="aw">${A.map(a=>`
+    <div class="a ${a.got?'got':''}">
+      <div class="ic">${a.ic}</div>
+      <div class="t">${a.t}</div>
+      <div class="p">${a.got?'открыто':km(Math.min(a.cur,a.tgt))+' / '+km(a.tgt)}</div>
+      ${a.got?'':`<div class="bar"><i style="width:${Math.min(100,a.cur/a.tgt*100)}%"></i></div>`}
+    </div>`).join('')}</div>`;
+}
+function nextAwardCard(A){
+  const next=A.filter(a=>!a.got).sort((a,b)=>(b.cur/b.tgt)-(a.cur/a.tgt))[0];
+  if(!next)return '';
+  return `<div class="card" style="background:linear-gradient(150deg,#1E2530,#14181E)">
+    <div class="lbl">Ближайшая медаль</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:10px">
+      <div style="font-size:34px;filter:grayscale(1);opacity:.55">${next.ic}</div>
+      <div style="flex:1;min-width:0">
+        <b>${next.t}</b><div style="color:var(--mut);font-size:13px">${next.d}</div>
+        <div class="bar" style="height:5px"><i style="width:${Math.min(100,next.cur/next.tgt*100)}%;background:var(--acc)"></i></div>
+      </div>
+      <div style="font-variant-numeric:tabular-nums;color:var(--acc);font-weight:650">${Math.round(next.cur/next.tgt*100)}%</div>
+    </div></div>`;
+}
+function checkNew(st){
+  const A=awardState(st).filter(a=>a.got).map(a=>a.id);
+  const fresh=A.filter(id=>!S.seen.includes(id));
+  S.seen=A;save();
+  if(fresh.length&&S.runs.length){const a=AWARDS.find(x=>x.id===fresh[0]);toast(a.ic+' Награда: '+a.t)}
+}
+
+/* ---------- ЕЩЁ ---------- */
+function vMore(P,st){
+  return `<div class="top"><div><h1>Ещё</h1><div class="sub">Данные и настройки</div></div></div>
+  <div class="card">
+    <div class="lbl">Данные</div>
+    <div style="margin-top:10px">
+      <button class="btn sec sm" style="margin-bottom:8px" onclick="pickRuns()">Загрузить файлы пробежек</button>
+      <div class="row">
+        <button class="btn gh sm" onclick="exportJSON()">Выгрузить</button>
+        <button class="btn gh sm" onclick="importJSON()">Загрузить</button>
+      </div>
+      <button class="btn gh sm" style="margin-top:8px" onclick="demo()">Заполнить примером</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="lbl">Синхронизация</div>
+    <div class="hint" style="margin-top:8px">${syncOn()
+      ?`Подключена. Забирается при каждом открытии, отправляется после любого изменения. Последний обмен: ${syncAge()}.`
+      :'Не настроена — данные живут только здесь. На iPhone у приложения с рабочего стола хранилище отдельное от Safari, так что без облака они не совпадут.'}</div>
+    <button class="btn sec sm" style="margin-top:12px" onclick="syncSheet()">${syncOn()?'Настроить':'Подключить гист'}</button>
+  </div>
+  <div class="card">
+    <div class="lbl">Сейчас</div>
+    <div style="margin-top:10px;font-size:14px;line-height:1.7;color:var(--mut)">
+      Уровень: <b style="color:var(--tx)">${km(P.L)} мин бега</b> за занятие<br>
+      Следующее: <b style="color:var(--tx)">${P.next.title.toLowerCase()}</b><br>
+      Бегаешь примерно раз в <b style="color:var(--tx)">${km(P.cadence)} ${plural(Math.round(P.cadence),'день','дня','дней')}</b><br>
+      За занятие выходит <b style="color:var(--tx)">${km(P.kmPer)} км</b>
+    </div>
+    <button class="btn gh sm" style="margin-top:12px" onclick="resetLevel()">Сбросить уровень к началу</button>
+  </div>
+  <div class="card">
+    <div class="lbl">Как это работает</div>
+    <div class="hint" style="margin-top:8px;line-height:1.65">
+      Расписания нет: ни недель, ни дней. Есть одно следующее занятие, и оно собирается заново каждый раз, когда ты загружаешь пробежку и отвечаешь, как она далась.
+      Типы чередуются — интервалы, потом непрерывный бег. Пропустил неделю, две, месяц — ничего не сгорело, уровень просто мягко откатится.
+    </div>
+  </div>
+  <div class="card">
+    <div class="lbl">Версия</div>
+    <div class="hint" style="margin-top:8px">${APP_VERSION}${newVersion?` · на сервере уже ${newVersion}`:''}</div>
+    <button class="btn sec sm" style="margin-top:12px" onclick="forceUpdate()">Проверить и обновить</button>
+  </div>
+  <div class="card">
+    <div class="lbl">Сброс</div>
+    <button class="btn gh sm" style="margin-top:10px;color:var(--bad);border-color:#3A2622" onclick="wipe()">Стереть всё</button>
+  </div><div style="height:20px"></div>`;
+}
+function resetLevel(){
+  if(!confirm('Убрать ответы о самочувствии? Пробежки останутся, уровень начнётся заново.'))return;
+  S.runs.forEach(r=>{delete r.rpe});touch();render();toast('Уровень сброшен');
+}
+
+/* ==================== действия ==================== */
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),2200)}
+function openSheet(html){document.getElementById('sheetBody').innerHTML='<div class="grab"></div>'+html;document.getElementById('sheet').classList.add('on')}
+function closeSheet(){document.getElementById('sheet').classList.remove('on')}
+
+function delRun(id){S.runs=S.runs.filter(r=>r.id!==id);touch();render()}
+
+/* ---------- как далось ---------- */
+function askRpe(id){
+  const r=S.runs.find(x=>x.id===id);
+  if(!r)return;
+  openSheet(`<h2>Как далась пробежка?</h2>
+    <div class="hint" style="margin-top:8px">${fmtDate(fromISO(r.date))} · ${km(r.dist)} км${r.min?' за '+km(r.min)+' мин':''}. Это единственное, что решает, каким будет следующее занятие.</div>
+    <div style="margin-top:14px">
+      ${RPE.map(x=>`<button class="btn ${r.rpe===x.v?'':'sec'}" style="margin-bottom:8px;text-align:left;display:block" onclick="setRpe('${id}',${x.v})">
+        <div>${x.t}</div><div style="font-weight:500;opacity:.6;font-size:13px;margin-top:2px">${x.d}</div></button>`).join('')}
+    </div>
+    ${r.kind?'':`<div class="hint">Занятие загружено из файла — приложение не знает, интервалы это были или непрерывный бег. Отметь, если хочешь:</div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn gh sm" onclick="setKind('${id}','int')">Интервалы</button>
+        <button class="btn gh sm" onclick="setKind('${id}','cont')">Непрерывно</button>
+      </div>`}
+    <div style="height:10px"></div><button class="btn gh sm" onclick="closeSheet()">Потом</button>`);
+}
+function setRpe(id,v){
+  const r=S.runs.find(x=>x.id===id);if(!r)return;
+  r.rpe=v;if(!r.kind)r.kind=pendingKind||'int';
+  pendingKind=null;touch();closeSheet();render();
+  toast('Следующее занятие: '+mins(plan().next.runMin)+' бега');
+}
+function setKind(id,k){const r=S.runs.find(x=>x.id===id);if(r){r.kind=k;touch();askRpe(id)}}
+let pendingKind=null;
+
+/* ---------- импорт файлов ---------- */
+/* Выбор файла открывается сразу: промежуточный экран тут лишний. */
+function pickRuns(){const i=document.getElementById('pickFile');i.value='';i.click()}
+function readFiles(inp){
+  const fs=[...inp.files];if(!fs.length)return;
+  inp.value='';
+  toast('Разбираю…');
+  Promise.all(fs.map(f=>f.arrayBuffer().then(buf=>ingestBuf(buf,f.name)).catch(()=>({add:0,skip:0,bad:1}))))
+    .then(res=>{
+      const t=res.reduce((a,x)=>({add:a.add+x.add,skip:a.skip+x.skip,bad:a.bad+x.bad}),{add:0,skip:0,bad:0});
+      finishImport(t.add,t.skip,t.bad);
+    });
+}
+/* Формат определяем по содержимому, а не по расширению: имена бывают любые. */
+async function ingestBuf(buf,name){
+  const u=new Uint8Array(buf);
+  if(u.length<8)return {add:0,skip:0,bad:1};
+  if(u[0]===0x50&&u[1]===0x4B)return unzipAll(u);            // PK — архив
+  const text=new TextDecoder('utf-8').decode(u);
+  return ingest(text);
+}
+function ingest(text){
+  const head=text.slice(0,400).replace(/^﻿/,'').trimStart();
+  if(!head)return {add:0,skip:0,bad:1};
+  if(head[0]==='<')return parseXML(text);
+  if(head[0]==='{'||head[0]==='[')return parseJSON(text);
+  return parseCSV(text);
+}
+/* Минимальный разбор zip: центральный каталог плюс распаковка через DecompressionStream. */
+async function unzipAll(u){
+  const dv=new DataView(u.buffer,u.byteOffset,u.byteLength);
+  let end=-1;
+  for(let i=u.length-22;i>=0&&i>u.length-70000;i--){if(dv.getUint32(i,true)===0x06054b50){end=i;break}}
+  if(end<0)return {add:0,skip:0,bad:1};
+  const n=dv.getUint16(end+10,true);let off=dv.getUint32(end+16,true);
+  const total={add:0,skip:0,bad:0};
+  for(let k=0;k<n;k++){
+    if(dv.getUint32(off,true)!==0x02014b50)break;
+    const method=dv.getUint16(off+10,true);
+    const csize=dv.getUint32(off+20,true);
+    const nameLen=dv.getUint16(off+28,true),extraLen=dv.getUint16(off+30,true),cmtLen=dv.getUint16(off+32,true);
+    const lho=dv.getUint32(off+42,true);
+    const fname=new TextDecoder().decode(u.subarray(off+46,off+46+nameLen));
+    off+=46+nameLen+extraLen+cmtLen;
+    if(/\/$/.test(fname)||csize===0)continue;
+    const lNameLen=dv.getUint16(lho+26,true),lExtra=dv.getUint16(lho+28,true);
+    const start=lho+30+lNameLen+lExtra;
+    const raw=u.subarray(start,start+csize);
+    try{
+      let data=raw;
+      if(method===8){
+        const ds=new DecompressionStream('deflate-raw');
+        data=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(ds)).arrayBuffer());
+      } else if(method!==0){continue}
+      const r=await ingestBuf(data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength),fname);
+      total.add+=r.add;total.skip+=r.skip;
+    }catch(e){/* один файл не разобрался — идём дальше */}
+  }
+  if(!total.add&&!total.skip)total.bad=1;
+  return total;
+}
+/* JSON произвольной формы: ищем в дереве объекты с датой, дистанцией и временем.
+   Экспортёры вроде Health Auto Export пишут числа как {qty: 4.12, units: "km"},
+   поэтому величину и единицы разбираем отдельно. */
+function qty(v){
+  if(v==null)return null;
+  if(typeof v==='number')return {n:v,u:''};
+  if(typeof v==='string'){const n=parseFloat(v.replace(',','.'));return isNaN(n)?null:{n,u:v.replace(/[\d.,\s-]/g,'').toLowerCase()}}
+  if(typeof v==='object'){
+    const k=Object.keys(v).find(x=>/^(qty|value|amount|val)$/i.test(x));
+    if(k==null)return null;
+    const n=parseFloat(v[k]);
+    if(isNaN(n))return null;
+    const uk=Object.keys(v).find(x=>/^(unit|units)$/i.test(x));
+    return {n,u:uk?String(v[uk]).toLowerCase():''};
+  }
+  return null;
+}
+function toKm(q){
+  if(!q)return 0;
+  if(/^m$|meter|метр/.test(q.u))return q.n/1000;
+  if(/mi|mile|миля/.test(q.u))return q.n*1.609344;
+  if(/km|км/.test(q.u))return q.n;
+  return q.n>300?q.n/1000:q.n;          // единиц нет — решаем по величине
+}
+function toMin(q){
+  if(!q)return 0;
+  if(/^s$|sec|сек/.test(q.u))return q.n/60;
+  if(/^h$|hour|час/.test(q.u))return q.n*60;
+  if(/min|мин/.test(q.u))return q.n;
+  return q.n>600?q.n/60:q.n;
+}
+function parseJSON(text){
+  let j;try{j=JSON.parse(text)}catch(e){return {add:0,skip:0,bad:1}}
+  const found=[];
+  const key=(o,re)=>Object.keys(o).find(k=>re.test(k));
+  const walk=(v,depth)=>{
+    if(!v||typeof v!=='object'||depth>8)return;
+    if(Array.isArray(v)){v.forEach(x=>walk(x,depth+1));return}
+    const kD=key(v,/^(start_?date|start_?time|date|start|begin|timestamp|time)$/i)||key(v,/date|time|start/i);
+    const kL=key(v,/^(distance|dist|total_?distance|km|meters?)$/i)||key(v,/dist/i);
+    const kT=key(v,/^(duration|moving_?time|elapsed_?time|total_?time|active_?time|sport_?time)$/i)||key(v,/duration|elapsed|moving/i);
+    const L=kL?qty(v[kL]):null;
+    if(kD&&L){
+      const type=String(v.type||v.sport||v.name||v.workoutActivityType||v.category||v.activity||'Run');
+      if(!isNotRun(type)){
+        const kH=key(v,/^(avg_?heart_?rate|average_?heart_?rate|heart_?rate|avg_?hr|hr_?avg)$/i)||key(v,/heart|pulse|пульс/i);
+        found.push({d:v[kD],dist:L,dur:kT?qty(v[kT]):null,hr:kH?qty(v[kH]):null});
+      }
+    }
+    Object.values(v).forEach(x=>walk(x,depth+1));
+  };
+  walk(j,0);
+  let add=0,skip=0;
+  for(const f of found){
+    const D=jsonDate(f.d);if(!D)continue;
+    const dist=toKm(f.dist);
+    if(!(dist>0))continue;
+    const hr=f.hr?Math.round(f.hr.n):0;
+    if(pushRun(D.d,D.h,dist,toMin(f.dur),'json',{hr:hr>40&&hr<230?hr:0}))add++;else skip++;
+  }
+  return {add,skip,bad:found.length?0:1};
+}
+function jsonDate(v){
+  if(typeof v==='number'){
+    const ms=v>1e12?v:v*1000;                      // секунды или миллисекунды
+    const d=new Date(ms);
+    return isNaN(+d)||d.getFullYear()<2000?null:{d,h:d.getHours()};
+  }
+  return parseDate(String(v));
+}
+
+function finishImport(add,skip,bad){
+  if(add){
+    // самая свежая пробежка — это то занятие, которое приложение предлагало
+    const R=sortedRuns(),last=R[R.length-1];
+    if(last&&!last.kind)last.kind=pendingKind||nextKindBefore(last);
+  }
+  if(add)touch();else save();
+  closeSheet();render();
+  if(!add){toast(skip?'Всё это уже загружено':(bad?'Файл не разобрался':'Пробежек в файле не нашлось'));return}
+  const R=sortedRuns(),last=R[R.length-1];
+  toast(`Добавлено ${add} ${plural(add,'пробежка','пробежки','пробежек')}`);
+  if(last&&!last.rpe)setTimeout(()=>askRpe(last.id),450);
+}
+/* каким должен был быть тип занятия перед этой пробежкой */
+function nextKindBefore(r){
+  const prev=sortedRuns().filter(x=>x.kind&&x.id!==r.id).slice(-1)[0];
+  return prev&&prev.kind==='int'?'cont':'int';
+}
+/* общая точка добавления: дубли режутся по паре «дата + дистанция» */
+function pushRun(d,h,dist,min,src,extra){
+  dist=Math.round(dist*100)/100;
+  if(!(dist>0))return false;
+  const key=iso(d)+'|'+Math.round(dist*10);
+  if(S.runs.some(r=>r.date+'|'+Math.round(r.dist*10)===key))return false;
+  const r={id:'i'+S.runs.length+Date.now().toString(36),date:iso(d),dist,
+    min:Math.round((min||0)*10)/10,h,src};
+  // пустые поля не храним, чтобы не мусорить в облаке
+  if(extra)for(const k of ['hr','hrMax','kcal','up'])if(extra[k])r[k]=extra[k];
+  S.runs.push(r);
+  return true;
+}
+
+/* ---------- TCX и GPX ----------
+   Берём всё, что файл вообще может дать: кроме даты, дистанции и времени —
+   пульс (средний и максимальный), калории и набор высоты. Если ничего этого
+   в выгрузке нет, поля просто останутся пустыми. */
+function parseXML(text){
+  let doc;
+  try{doc=new DOMParser().parseFromString(text,'application/xml')}catch(e){return {add:0,skip:0,bad:1}}
+  if(!doc||doc.getElementsByTagName('parsererror').length)return {add:0,skip:0,bad:1};
+  const tag=(el,n)=>el.getElementsByTagName(n);
+  const num=(el,n)=>{const x=tag(el,n)[0];return x?parseFloat(x.textContent)||0:0};
+  let add=0,skip=0;
+
+  for(const a of tag(doc,'Activity')){
+    const sport=(a.getAttribute('Sport')||'')+' '+(tag(a,'Notes')[0]?.textContent||'');
+    if(isNotRun(sport))continue;
+    const laps=tag(a,'Lap');
+    let dist=0,sec=0,kcal=0,hrSum=0,hrN=0,hrMax=0;
+    for(const l of laps){
+      dist+=num(l,'DistanceMeters');sec+=num(l,'TotalTimeSeconds');kcal+=num(l,'Calories');
+      const avg=tag(l,'AverageHeartRateBpm')[0],mx=tag(l,'MaximumHeartRateBpm')[0];
+      if(avg){const v=parseFloat(tag(avg,'Value')[0]?.textContent||avg.textContent)||0;if(v){hrSum+=v;hrN++}}
+      if(mx){const v=parseFloat(tag(mx,'Value')[0]?.textContent||mx.textContent)||0;hrMax=Math.max(hrMax,v)}
+    }
+    const when=tag(a,'Id')[0]?.textContent||(laps[0]&&laps[0].getAttribute('StartTime'));
+    const t=when?new Date(when):null;
+    if(!t||isNaN(+t))continue;
+    if(dist<=0)dist=trackLength(a,'Trackpoint');
+    // пульса не было в кругах — соберём по точкам трека
+    if(!hrN){const s=hrSeries(a,'Trackpoint');if(s.n){hrSum=s.sum/s.n;hrN=1;hrMax=Math.max(hrMax,s.max)}}
+    const extra={hr:hrN?Math.round(hrSum/hrN):0,hrMax:Math.round(hrMax)||0,
+                 kcal:Math.round(kcal)||0,up:Math.round(elevGain(a,'Trackpoint'))||0};
+    if(pushRun(t,t.getHours(),dist/1000,sec/60,'tcx',extra))add++;else skip++;
+  }
+  for(const tr of tag(doc,'trk')){
+    const nm=(tag(tr,'name')[0]?.textContent||'')+' '+(tag(tr,'type')[0]?.textContent||'');
+    if(isNotRun(nm))continue;
+    const pts=tag(tr,'trkpt');
+    if(!pts.length)continue;
+    const times=[...pts].map(p=>tag(p,'time')[0]?.textContent).filter(Boolean);
+    const t=times.length?new Date(times[0]):null;
+    if(!t||isNaN(+t))continue;
+    const sec=times.length>1?(new Date(times[times.length-1])-t)/1000:0;
+    const hs=hrSeries(tr,'trkpt');
+    const extra={hr:hs.n?Math.round(hs.sum/hs.n):0,hrMax:Math.round(hs.max)||0,kcal:0,
+                 up:Math.round(elevGain(tr,'trkpt'))||0};
+    if(pushRun(t,t.getHours(),trackLength(tr,'trkpt')/1000,sec/60,'gpx',extra))add++;else skip++;
+  }
+  return {add,skip,bad:0};
+}
+/* пульс из точек трека: у Garmin он в HeartRateBpm, у GPX — в расширениях */
+function hrSeries(root,tagName){
+  let sum=0,n=0,max=0;
+  for(const p of root.getElementsByTagName(tagName)){
+    let v=0;
+    const h=p.getElementsByTagName('HeartRateBpm')[0];
+    if(h)v=parseFloat(h.getElementsByTagName('Value')[0]?.textContent||h.textContent)||0;
+    if(!v)for(const e of p.getElementsByTagName('*')){
+      if(/(^|:)(hr|heartrate)$/i.test(e.tagName)){v=parseFloat(e.textContent)||0;break}
+    }
+    if(v>30&&v<230){sum+=v;n++;max=Math.max(max,v)}
+  }
+  return {sum,n,max};
+}
+/* набор высоты: считаем только подъёмы больше метра, чтобы не ловить дрожь высотомера */
+function elevGain(root,tagName){
+  let up=0,prev=null;
+  for(const p of root.getElementsByTagName(tagName)){
+    const e=p.getElementsByTagName('AltitudeMeters')[0]||p.getElementsByTagName('ele')[0];
+    if(!e)continue;
+    const v=parseFloat(e.textContent);
+    if(isNaN(v))continue;
+    if(prev!==null&&v-prev>1)up+=v-prev;
+    if(prev===null||Math.abs(v-prev)>1)prev=v;
+  }
+  return up;
+}
+function isNotRun(s){return /bik|cycl|ride|swim|велос|плаван|walk|hik/i.test(s||'')}
+/* длина трека по координатам, метры */
+function trackLength(root,tagName){
+  const pts=root.getElementsByTagName(tagName);
+  let sum=0,pa=null;
+  for(const p of pts){
+    let la,lo;
+    if(p.hasAttribute('lat')){la=+p.getAttribute('lat');lo=+p.getAttribute('lon')}
+    else{const pos=p.getElementsByTagName('Position')[0];if(!pos)continue;
+      la=parseFloat(pos.getElementsByTagName('LatitudeDegrees')[0]?.textContent);
+      lo=parseFloat(pos.getElementsByTagName('LongitudeDegrees')[0]?.textContent)}
+    if(isNaN(la)||isNaN(lo))continue;
+    if(pa)sum+=haversine(pa[0],pa[1],la,lo);
+    pa=[la,lo];
+  }
+  return sum;
+}
+function haversine(a1,o1,a2,o2){
+  const R=6371000,r=Math.PI/180;
+  const dA=(a2-a1)*r,dO=(o2-o1)*r;
+  const x=Math.sin(dA/2)**2+Math.cos(a1*r)*Math.cos(a2*r)*Math.sin(dO/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(x)));
+}
+
+function splitCSV(text){
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++} else q=false } else cur+=c }
+    else { if(c==='"')q=true;
+      else if(c===','){row.push(cur);cur=''}
+      else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur=''}
+      else if(c!=='\r')cur+=c }
+  }
+  if(cur||row.length){row.push(cur);rows.push(row)}
+  return rows.filter(r=>r.length>1);
+}
+const RUMON={'янв':0,'фев':1,'мар':2,'апр':3,'мая':4,'май':4,'июн':5,'июл':6,'авг':7,'сен':8,'окт':9,'ноя':10,'дек':11};
+function parseDate(s){
+  s=(s||'').trim();if(!s)return null;
+  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return{d:new Date(+m[1],+m[2]-1,+m[3]),h:+(s.match(/[T ](\d{1,2}):/)?.[1]??12)};
+  m=s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/);if(m)return{d:new Date(+m[3],+m[2]-1,+m[1]),h:+(s.match(/ (\d{1,2}):/)?.[1]??12)};
+  m=s.match(/(\d{1,2})\s+([а-яё]{3})[а-яё.]*\s+(\d{4})/i);
+  if(m&&RUMON[m[2].toLowerCase()]!=null)return{d:new Date(+m[3],RUMON[m[2].toLowerCase()],+m[1]),h:+(s.match(/,\s*(\d{1,2}):/)?.[1]??12)};
+  const t=Date.parse(s.replace(/(\d)\s*(AM|PM)/i,'$1 $2'));
+  if(!isNaN(t)){const d=new Date(t);return{d,h:d.getHours()}}
+  return null;
+}
+function parseTime(s){
+  s=(s||'').trim();if(!s)return 0;
+  if(/:/.test(s)){const p=s.split(':').map(Number);return p.length===3?p[0]*60+p[1]+p[2]/60:p[0]+p[1]/60}
+  const n=parseFloat(s.replace(',','.'));return isNaN(n)?0:n/60; // Strava отдаёт секунды
+}
+function parseCSV(text){
+  const rows=splitCSV(text);if(rows.length<2)return {add:0,skip:0,bad:1};
+  const H=rows[0].map(h=>h.replace(/^\ufeff/,'').trim().toLowerCase());
+  const find=(...re)=>{for(const r of re){const i=H.findIndex(h=>r.test(h));if(i>=0)return i}return -1};
+  const iDate=find(/^activity date$/,/дата занятия/,/^date$/,/дата/);
+  const iType=find(/^activity type$/,/тип занятия/,/^type$/,/тип/);
+  const iDist=find(/^distance$/,/^расстояние$/,/^дистанция$/,/distance/,/расстояние/);
+  const iTime=find(/^moving time$/,/время в движении/,/^elapsed time$/,/общее время/,/^time$/);
+  if(iDate<0||iDist<0)return {add:0,skip:0,bad:1};
+  let add=0,skip=0;
+  for(let i=1;i<rows.length;i++){
+    const c=rows[i];
+    const type=(iType>=0?c[iType]:'Run')||'';
+    if(!/run|бег|jog|trail/i.test(type)||isNotRun(type))continue;
+    const D=parseDate(c[iDate]);if(!D||isNaN(+D.d))continue;
+    let dist=parseFloat(String(c[iDist]||'').replace(/\s/g,'').replace(',','.'));
+    if(!dist||dist<=0)continue;
+    if(dist>300)dist=dist/1000; // метры
+    const iHr=find(/average heart rate/,/средний пульс/,/^hr$/);
+    const hr=iHr>=0?Math.round(parseFloat(String(c[iHr]||'').replace(',','.'))||0):0;
+    if(pushRun(D.d,D.h,dist,parseTime(iTime>=0?c[iTime]:''),'csv',{hr}))add++;else skip++;
+  }
+  return {add,skip,bad:0};
+}
+
+
+/* ==================== синхронизация через gist ====================
+   На iPhone у приложения с рабочего стола своё хранилище, отдельное от Safari.
+   Поэтому единственный надёжный способ видеть одни и те же данные везде —
+   держать их в облаке: забираем при каждом открытии, отправляем после любого
+   изменения. Токен живёт только в localStorage, в репозитории его нет. */
+const SKEY='ayumi.sync';
+const GFILE='ayumi.json',GOLD='razbeg.json';   // старое имя файла в гисте тоже понимаем
+function syncCfg(){try{return JSON.parse(localStorage.getItem(SKEY))||{}}catch(e){return {}}}
+function syncSave(c){localStorage.setItem(SKEY,JSON.stringify(c))}
+function syncOn(){const c=syncCfg();return !!(c.gist&&c.token)}
+let syncBusy=false;
+async function gistCall(method,body){
+  const c=syncCfg();
+  const res=await fetch('https://api.github.com/gists/'+c.gist,{
+    method,headers:{Authorization:'Bearer '+c.token,Accept:'application/vnd.github+json'},
+    body:body?JSON.stringify(body):undefined});
+  if(!res.ok)throw new Error(res.status===401?'токен не подошёл':(res.status===404?'гист не найден':'GitHub ответил '+res.status));
+  return res.json();
+}
+function mergeRuns(a,b){
+  const out=[],seen=new Set();
+  for(const r of [...a,...b]){
+    const k=r.date+'|'+Math.round(r.dist*10);
+    const i=seen.has(k)?out.findIndex(x=>x.date+'|'+Math.round(x.dist*10)===k):-1;
+    if(i>=0){ // одна и та же пробежка с двух устройств: берём ту, где есть ответ
+      if(!out[i].rpe&&r.rpe)out[i]=r;
+      continue;
+    }
+    seen.add(k);out.push(r);
+  }
+  return out.sort((x,y)=>x.date<y.date?-1:1);
+}
+async function syncPull(quiet){
+  if(!syncOn()||syncBusy)return false;
+  syncBusy=true;
+  try{
+    const g=await gistCall('GET');
+    const f=g.files&&(g.files[GFILE]||g.files[GOLD]);
+    if(!f)return false;
+    const raw=f.truncated?await (await fetch(f.raw_url)).text():f.content;
+    const rem=JSON.parse(raw||'{}');
+    const before=JSON.stringify(S.runs);
+    S.runs=mergeRuns(S.runs,rem.runs||[]);
+    S.seen=rem.seen&&rem.seen.length>(S.seen||[]).length?rem.seen:S.seen;
+    S.syncedAt=Date.now();
+    const changed=JSON.stringify(S.runs)!==before;
+    save();render();
+    if(!quiet)toast(changed?'Данные забраны':'Уже всё на месте');
+    // локальных пробежек могло быть больше — вернём их в облако
+    if(changed&&(rem.runs||[]).length!==S.runs.length)syncPush(true);
+    return changed;
+  }catch(e){if(!quiet)toast('Не забралось: '+e.message);return false}
+  finally{syncBusy=false}
+}
+async function syncPush(quiet){
+  if(!syncOn())return false;
+  try{
+    S.updated=Date.now();
+    const g=await gistCall('GET');
+    const name=(g.files&&g.files[GOLD]&&!g.files[GFILE])?GOLD:GFILE;   // не плодим второй файл
+    await gistCall('PATCH',{files:{[name]:{content:JSON.stringify(
+      {runs:S.runs,seen:S.seen,updated:S.updated},null,1)}}});
+    S.syncedAt=Date.now();save();
+    if(!quiet)toast('Отправлено');
+    return true;
+  }catch(e){if(!quiet)toast('Не отправилось: '+e.message);return false}
+}
+/* Любое изменение данных проходит здесь: сохранили локально и отправили в облако. */
+function touch(){save();if(syncOn())syncPush(true)}
+function syncAge(){
+  if(!S.syncedAt)return 'ещё не синхронизировалось';
+  const m=Math.round((Date.now()-S.syncedAt)/60000);
+  if(m<1)return 'только что';
+  if(m<60)return `${m} ${plural(m,'минуту','минуты','минут')} назад`;
+  const h=Math.round(m/60);
+  if(h<24)return `${h} ${plural(h,'час','часа','часов')} назад`;
+  const d=Math.round(h/24);
+  return `${d} ${plural(d,'день','дня','дней')} назад`;
+}
+/* Подключение: от человека нужен только токен. Гист приложение найдёт само
+   среди его гистов, а если такого нет — создаст. Номер вводить не нужно. */
+function syncSheet(){
+  const c=syncCfg();
+  openSheet(`<h2>Синхронизация</h2>
+    <div class="hint" style="margin-top:8px">На iPhone у приложения с рабочего стола своё хранилище, отдельное от Safari: что загрузил в браузере, здесь не появится. Общее облако это чинит — и заодно данные не пропадут при переустановке.</div>
+    <ol class="ol">
+      <li>Открой <b>github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)</b> → Generate new token (classic).</li>
+      <li>Отметь единственную галочку <b>gist</b>. Именно classic: у fine-grained токенов доступа к гистам нет.</li>
+      <li>Скопируй токен и вставь сюда. Дальше приложение всё сделает само.</li>
+    </ol>
+    <div class="f"><label>Токен GitHub</label>
+      <input type="text" id="syT" value="${c.token||''}" placeholder="ghp_…" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button class="btn gh sm" style="margin-top:8px" onclick="pasteToken()">Вставить из буфера обмена</button>
+    </div>
+    <div id="syMsg" class="hint" style="margin-bottom:12px">${c.gist?`Подключено. Гист <b>${c.gist.slice(0,8)}…</b>, последний обмен: ${syncAge()}.`:''}</div>
+    <button class="btn" onclick="syncConnect()">Подключить</button>
+    ${c.gist?`<div style="height:8px"></div>
+      <div class="row">
+        <button class="btn sec sm" onclick="syncPush()">Отправить сейчас</button>
+        <button class="btn sec sm" onclick="syncPull()">Забрать сейчас</button>
+      </div>
+      <button class="btn gh sm" style="margin-top:8px" onclick="syncForget()">Отключить</button>`:''}
+    <div class="hint" style="margin-top:12px">Токен остаётся только в этом браузере. В коде приложения его нет и быть не может — страница публичная.</div>`);
+}
+function syMsg(t,bad){
+  const el=document.getElementById('syMsg');
+  if(el){el.innerHTML=t;el.style.color=bad?'var(--bad)':'var(--mut)'}
+}
+async function pasteToken(){
+  try{
+    const t=await navigator.clipboard.readText();
+    if(!t||!t.trim())return syMsg('В буфере пусто',true);
+    document.getElementById('syT').value=t.trim();
+    syMsg('Вставил. Теперь «Подключить».');
+  }catch(e){syMsg('Браузер не дал прочитать буфер — вставь длинным нажатием в поле',true)}
+}
+async function syncConnect(){
+  const token=(document.getElementById('syT').value||'').trim();
+  if(!token)return syMsg('Сначала вставь токен',true);
+  syMsg('Проверяю…');
+  try{
+    // 1. кто мы и есть ли вообще доступ
+    const me=await fetch('https://api.github.com/user',{headers:{Authorization:'Bearer '+token}});
+    if(me.status===401)return syMsg('Токен не подошёл. Проверь, что он скопирован целиком и это token (classic).',true);
+    if(!me.ok)return syMsg('GitHub ответил '+me.status,true);
+    // 2. ищем свой гист среди уже существующих
+    syMsg('Ищу гист…');
+    let gist=null;
+    for(let page=1;page<=3&&!gist;page++){
+      const r=await fetch('https://api.github.com/gists?per_page=100&page='+page,{headers:{Authorization:'Bearer '+token}});
+      if(r.status===403||r.status===404)return syMsg('У токена нет области gist. Создай новый и отметь галочку gist.',true);
+      if(!r.ok)return syMsg('GitHub ответил '+r.status,true);
+      const list=await r.json();
+      if(!list.length)break;
+      gist=list.find(g=>g.files&&(g.files[GFILE]||g.files[GOLD]));
+    }
+    // 3. нет — заводим новый, приватный
+    if(!gist){
+      syMsg('Гиста нет, создаю…');
+      const r=await fetch('https://api.github.com/gists',{
+        method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'},
+        body:JSON.stringify({description:'Аюми — данные пробежек',public:false,
+          files:{[GFILE]:{content:JSON.stringify({runs:[],seen:[],updated:0},null,1)}}})});
+      if(!r.ok)return syMsg('Не смог создать гист: GitHub ответил '+r.status,true);
+      gist=await r.json();
+    }
+    syncSave({gist:gist.id,token});
+    syMsg('Готово, забираю данные…');
+    await syncPull(true);
+    await syncPush(true);
+    closeSheet();render();
+    toast('Синхронизация подключена');
+  }catch(e){syMsg('Не получилось: '+e.message,true)}
+}
+function syncForget(){localStorage.removeItem(SKEY);closeSheet();render();toast('Синхронизация отключена')}
+
+/* ---------- json ---------- */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ayumi-'+iso(today())+'.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function importJSON(){
+  const i=document.createElement('input');i.type='file';i.accept='.json';
+  i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();
+    r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.runs)throw 0;S=Object.assign({tab:'today',seen:[]},j);save();render();toast('Загружено')}catch(e){toast('Файл не подошёл')}};
+    r.readAsText(f)};
+  i.click();
+}
+function wipe(){if(confirm('Стереть план и все пробежки?')){localStorage.removeItem(KEY);S=load();render()}}
+
+/* ---------- демо ---------- */
+function demo(){
+  S.runs=[];
+  let L=8,kind='int',d=addDays(today(),-70);
+  for(let i=0;i<18;i++){
+    const p=7.6-i*0.06+Math.random()*.25;                 // темп понемногу улучшается
+    const ses=buildSession(L,kind,p);
+    const min=Math.round((ses.runMin+restMin(ses.t))*10)/10;   // часы считают и отдых
+    const dist=Math.round((ses.runMin/p+restMin(ses.t)/WALK_PACE)*10)/10;
+    const rpe=[1,2,2,3][Math.floor(Math.random()*4)];
+    S.runs.push({id:'d'+i,date:iso(d),dist,min,h:[7,19,10][i%3],src:'demo',kind,rpe});
+    L=Math.max(6,Math.min(90,L*RPEK(rpe)));
+    kind=kind==='int'?'cont':'int';
+    d=addDays(d,3+Math.round(Math.random()));
+  }
+  S.seen=[];save();closeSheet();render();toast('Пример загружен');
+}
+
+/* ==================== старт ==================== */
+document.querySelectorAll('.tb').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;save();render()});
+if(syncOn())syncPull(true);
+checkForUpdate();
+// приложение вернулось из фона — проверяем, не появилось ли новых данных
+document.addEventListener('visibilitychange',()=>{if(document.hidden)return;if(syncOn())syncPull(true);checkForUpdate()});
+window.addEventListener('online',()=>{if(syncOn())syncPull(true);checkForUpdate()});
+render();
+</script>
 </body>
 </html>
