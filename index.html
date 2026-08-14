@@ -259,7 +259,7 @@ svg{display:block;width:100%;height:auto;overflow:visible}
    Приложение сверяет свой номер с тем, что лежит на сервере, мимо всех кэшей.
    Это нужно из-за iOS: добавленная на экран «Домой» страница может держаться
    за старую копию неделями, и человек не понимает, почему правки не приехали. */
-const APP_VERSION='Аюми 26';
+const APP_VERSION='Аюми 29';
 let newVersion='';
 /* Регистрируем обработчик: без него iOS держится за старую копию страницы,
    и никакая проверка версии до человека не доедет. */
@@ -473,42 +473,36 @@ function levelNow(){
 function nextKind(){
   const R=sortedRuns().filter(r=>r.kind);
   const last=R[R.length-1];
-  return last&&last.kind==='int'?'cont':'int';
+  return last&&last.kind!=='brisk'?'brisk':'easy';
 }
-/* Чем выше уровень, тем длиннее рабочий отрезок и короче отдых. */
-const INT_TABLE=[[10,1,1.5],[13,1.5,1.5],[16,2,1.5],[20,3,1.5],[25,4,1.5],[32,5,2],[45,6,2],[999,8,2]];
+/* Занятие всегда непрерывное: время занятия и время бега — одно и то же число.
+   Отдыха внутри нет, он начинается, когда человек идёт домой пешком.
+   Чередуется не структура, а темп: спокойный бег учит держаться дольше,
+   бодрый — держать скорость. */
 function buildSession(L,kind,pace){
-  if(kind==='cont'){
-    const work=Math.max(5,Math.round(L*CONT));
-    return makeSession(T_(work,0,1),pace,'cont',{
-      title:'Непрерывный бег',
-      goal:`Пробежать ${mins(work)} и ни разу не перейти на шаг. Скорость не важна.`});
-  }
-  const row=INT_TABLE.find(r=>L<r[0]);
-  const work=row[1],rest=row[2];
-  const reps=Math.max(3,Math.round(L/work));
-  return makeSession(T_(work,rest,reps),pace,'int',{
-    title:'Интервалы',
-    goal:`Отбежать все ${reps} ${plural(reps,'отрезок','отрезка','отрезков')} целиком. Последний не медленнее первого.`});
+  const work=Math.max(5,Math.round(kind==='brisk'?L*0.7:L));
+  if(kind==='brisk')
+    return makeSession(T_(work,0,1),pace,'brisk',{
+      title:'Бодрый бег',
+      goal:`Пробежать ${mins(work)} в бодром темпе: дышать тяжело, но говорить ещё можешь.`});
+  return makeSession(T_(work,0,1),pace,'easy',{
+    title:'Спокойный бег',
+    goal:`Пробежать ${mins(work)} и ни разу не перейти на шаг. Скорость не важна.`});
 }
 const paceKnownNow=()=>!!easyPace();
 function makeSession(t,pace,kind,extra){
   return Object.assign({t,kind,type:kind==='int'?'intervals':'long',
     work:t.work,rest:t.rest,reps:t.reps,
     runMin:runMin(t),allMin:allMin(t),dist:estKm(t,pace),
-    plan:t.reps>1?`${t.reps} × ${mins(t.work)} бегом через ${mins(t.rest)} ${REST_NAME[t.restType]}`
-                 :`${mins(t.work)} бегом без перерыва`,
-    watch:watchRows(t,pace,paceKnownNow())},extra||{});
+    plan:`${mins(t.work)} бегом без перерыва`,
+    watch:watchRows(t,pace,paceKnownNow(),kind==='brisk')},extra||{});
 }
 /* Строки ровно под поля интервального таймера на часах */
-function watchRows(t,pace,known){
+function watchRows(t,pace,known,brisk){
   const rows=[['Работа',clock(t.work)]];
-  if(t.reps>1){
-    rows.push(['Отдых',`${clock(t.rest)} ${REST_NAME[t.restType]}`]);
-    rows.push(['Повторов',String(t.reps)]);
-    rows.push(['Из них бега',mins(runMin(t))]);
-  }
-  if(pace)rows.push(['Темп',known?`${pace2(pace*0.94)}–${pace2(pace*1.12)} /км`:'разговорный']);
+  if(pace)rows.push(['Темп',known
+    ? (brisk?`${pace2(pace*0.82)}–${pace2(pace*0.94)} /км`:`${pace2(pace*0.94)}–${pace2(pace*1.12)} /км`)
+    : (brisk?'бодрый':'разговорный')]);
   return rows;
 }
 const pace2=(p)=>pace(p,1);
@@ -521,7 +515,7 @@ function plan(){
   const last=R[R.length-1];
   return {L,kind,pace,paceKnown:!!paceRaw,
     next:buildSession(L,kind,pace),
-    other:buildSession(L,kind==='int'?'cont':'int',pace),
+    other:buildSession(L,kind==='brisk'?'easy':'brisk',pace),
     done:R.length,last,
     gap:last?daysBetween(fromISO(last.date),today()):null,
     pending:R.filter(r=>!r.rpe&&r.kind).slice(-1)[0]||null,
@@ -599,7 +593,7 @@ function median(a){if(!a.length)return 0;const b=a.slice().sort((x,y)=>x-y);retu
 const WIN=42;                                        // окно наблюдения, дней
 function indexWindow(from,to){
   const R=S.runs.filter(r=>{const d=fromISO(r.date);return d>addDays(today(),-to)&&d<=addDays(today(),-from)});
-  const cont=R.filter(r=>r.kind!=='int'&&r.min>=5&&r.dist>=1);
+  const cont=R.filter(r=>r.kind!=='int'&&r.min>=5&&r.dist>=1);   // 'int' — записи старого формата
   const easy=R.filter(r=>r.min>0&&r.dist>=1&&(!r.rpe||r.rpe<=2));
   // если часы отдают пульс — считаем экономичность: сколько метров в минуту на удар
   const withHr=R.filter(r=>r.hr>40&&r.min>0&&r.dist>=1);
@@ -683,8 +677,8 @@ function render(){
 /* ---------- ЗАНЯТИЕ ---------- */
 function heroSession(x,P,alt){
   return `<div class="hero"><div class="glow"></div>
-    <span class="type ${x.kind==='int'?'blue':''}">${x.title}</span>
-    <div class="big">${km(x.allMin)} <span>мин на всё</span></div>
+    <span class="type ${x.kind==='brisk'?'blue':''}">${x.title}</span>
+    <div class="big">${km(x.allMin)} <span>мин бега</span></div>
     <div class="det">${x.plan}</div>
     <div class="watch">
       <div class="lbl" style="margin-bottom:7px">На часы</div>
@@ -790,7 +784,7 @@ function vSessions(P,st){
       return `<div class="rn">
         <div class="dt"><b>${d.getDate()}</b><small>${MON[d.getMonth()]}</small></div>
         <div class="m"><b>${km(r.min||0)} мин</b> <span style="color:var(--mut);font-size:13px">${km(r.dist)} км${r.min?' · '+pace(r.min,r.dist)+' /км':''}</span>
-          <small>${r.kind?(r.kind==='int'?'интервалы':'непрерывный бег'):'загружено из файла'}${a?' · '+a.t.toLowerCase():''}${r.hr?' · пульс '+r.hr:''}${r.up?' · +'+r.up+' м':''}</small></div>
+          <small>${r.kind?(r.kind==='brisk'?'бодрый':(r.kind==='int'?'интервалы':'спокойный')):'загружено из файла'}${a?' · '+a.t.toLowerCase():''}${r.hr?' · пульс '+r.hr:''}${r.up?' · +'+r.up+' м':''}</small></div>
         <button class="x" onclick="askRpe('${r.id}')">${r.rpe?'⋯':'?'}</button>
       </div>`}).join('')
       :'<div class="empty">Ещё ничего нет. Загрузи файл после первой пробежки.</div>'}
@@ -848,7 +842,7 @@ function runBars(R){
     ${[0,.5,1].map(f=>`<line x1="${l}" x2="${W-r+2}" y1="${y(max*f)}" y2="${y(max*f)}" stroke="var(--line)"/>`).join('')}
     ${D.map((x,i)=>{
       const bx=l+i*bw,iw=Math.max(4,bw*.58),ox=bx+(bw-iw)/2,v=x.min||0;
-      const col=x.kind==='int'?'var(--acc)':(x.kind==='cont'?'var(--blue)':'var(--line)');
+      const col=x.kind==='brisk'?'#5ac8fa':(x.kind?'var(--acc)':'var(--line)');
       return `<rect x="${ox}" y="${y(v)}" width="${iw}" height="${Math.max(2,H-22-y(v))}" rx="3" fill="${col}"/>`;
     }).join('')}
     ${[.5,1].map(f=>`<text x="${W-r+7}" y="${y(max*f)+3}" fill="var(--mut)" font-size="10">${Math.round(max*f)}</text>`).join('')}
@@ -948,7 +942,7 @@ function vRoute(P,st){
       <div style="flex:1"><b>${r.name}</b><div class="hint">${r.sub}</div></div></div>
     <div class="bar" style="height:6px;margin-top:12px"><i style="width:${Math.min(100,st.total/ROUTE_TOTAL*100)}%;background:var(--acc)"></i></div>
     ${routeMap(st.total, Math.min(528, innerWidth-32))}
-    <div class="hint" style="margin-top:8px">Дорога открывается по мере бега: что впереди — видно только на шаг вперёд. На карте — участок отсюда до ближайшего места. Маршрут настоящий пеший, по дорогам и тропам OpenStreetMap; километры — его реальная длина.</div>
+    <div class="hint" style="margin-top:8px">Дорога открывается по мере бега: что впереди — видно только на шаг вперёд. Карта показывает, где ты сейчас и мимо чего бежишь; чтобы увидеть больше, открой её во весь экран. Маршрут настоящий пеший, по дорогам и тропам OpenStreetMap.</div>
   </div>
   <div class="card">
     <div style="margin-top:2px">
@@ -1069,11 +1063,10 @@ function mapSvg(v,W,H,total,tap){
 function routeMap(total,width){
   const W=Math.max(280,Math.min(560,width||340)), H=300;
   const next=STOPS.find(s=>total<s.abs);
-  const cut=pointAt(total), me=[cut[0],cut[1]];
-  const iTo=next?nearestIdx(next.ll):ROUTE_PTS.length-1;
-  const seg=[me].concat(ROUTE_PTS.slice(cut[2],Math.max(cut[2],iTo+1)));
-  if(seg.length<2)seg.push(next?next.ll:me);
-  const v=viewFit(seg,W,H,26,14);
+  const cut=pointAt(total);
+  // Крупный план вокруг текущей точки: важнее видеть, по какой улице бежишь,
+  // чем весь участок до следующего места целиком.
+  const v={lat:cut[0],lon:cut[1],z:15};
   const left_km=next?next.abs-total:0;
   return `<button id="mapCard" style="display:block;position:relative;width:100%;max-width:${W}px;height:${H}px;
       margin:12px auto 0;border-radius:14px;overflow:hidden;background:#12161c;border:1px solid var(--line);padding:0">
@@ -1095,10 +1088,8 @@ function routeMap(total,width){
 let mapView=null, mapTotal=0;
 function openFullMap(total){
   mapTotal=total;
-  const cut=pointAt(total), next=STOPS.find(s=>total<s.abs);
-  const seg=[[cut[0],cut[1]]].concat(next?[next.ll]:[]);
-  const W=innerWidth, H=innerHeight;
-  mapView=viewFit(seg.length>1?seg:[[cut[0],cut[1]],[cut[0]+.01,cut[1]+.01]],W,H,80,14);
+  const cut=pointAt(total);
+  mapView={lat:cut[0],lon:cut[1],z:15};   // открываем там же, где человек сейчас
   const el=document.getElementById('fullmap');
   el.style.display='block';
   drawFullMap();
